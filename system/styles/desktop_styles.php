@@ -207,4 +207,23 @@
     height: 18px;
     fill: white;
   }
+  .fullscreen-btn{
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    background: rgba(0,0,0,0.5);
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    transition: background 0.2s;
+  }
+  .fullscreen-btn:hover{
+    background: rgba(0,0,0,0.7);
+  }
 </style>
