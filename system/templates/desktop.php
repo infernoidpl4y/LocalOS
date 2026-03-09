@@ -168,7 +168,16 @@ $desktopApps = getDesktopApps();
       const win = document.createElement('div');
       win.id = winId;
       win.className = 'window active';
-      win.style.cssText = 'width:400px;height:350px;top:50px;left:50px;z-index:100;';
+      
+      // Custom sizes for specific apps
+      let windowWidth = '900px';
+      let windowHeight = '600px';
+      if (appName === 'breakcode' || appName === 'codeeditor') {
+        windowWidth = '1200px';
+        windowHeight = '700px';
+      }
+      
+      win.style.cssText = `width:${windowWidth};height:${windowHeight};top:30px;left:30px;z-index:100;`;
       win.innerHTML = `
         <div class="window-header">
           <span class="window-title">${displayName}</span>

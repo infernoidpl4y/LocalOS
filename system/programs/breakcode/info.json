@@ -1,0 +1,9 @@
+{
+  "name": "BreakCode",
+  "description": "Code editor with integrated terminal, syntax highlighting, plugins and themes support",
+  "icon": "code.png",
+  "type": "php",
+  "entry": "index.html",
+  "version": "1.0.0",
+  "author": "BreakingOS"
+}
