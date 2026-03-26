@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LOS Language - LocalOS Script</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      background: #0d1117;
+      color: #e6edf3;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .header {
+      padding: 12px 20px;
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #58a6ff;
+    }
+    .header-logo {
+      font-size: 22px;
+      background: linear-gradient(135deg, #e94560, #58a6ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .toolbar {
+      display: flex;
+      gap: 8px;
+    }
+    .toolbar button {
+      padding: 6px 14px;
+      background: #238636;
+      border: none;
+      border-radius: 6px;
+      color: white;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .toolbar button:hover { background: #2ea043; }
+    .toolbar button.secondary {
+      background: #21262d;
+      border: 1px solid #30363d;
+    }
+    .toolbar button.secondary:hover { background: #30363d; }
+    .main {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+    .editor {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid #30363d;
+    }
+    .panel-header {
+      padding: 8px 15px;
+      background: #21262d;
+      font-size: 12px;
+      color: #8b949e;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .code-area {
+      flex: 1;
+      display: flex;
+      background: #0d1117;
+    }
+    .line-numbers {
+      width: 50px;
+      background: #161b22;
+      padding: 15px 10px;
+      text-align: right;
+      color: #484f58;
+      font-size: 14px;
+      line-height: 1.6;
+      user-select: none;
+      overflow: hidden;
+    }
+    .code-editor {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #e6edf3;
+      font-family: inherit;
+      font-size: 14px;
+      line-height: 1.6;
+      padding: 15px;
+      resize: none;
+      outline: none;
+      tab-size: 2;
+    }
+    .output {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #0d1117;
+    }
+    .output-content {
+      flex: 1;
+      padding: 15px;
+      font-size: 14px;
+      line-height: 1.6;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+    .output-line { margin-bottom: 4px; }
+    .output-line.error { color: #f85149; }
+    .output-line.success { color: #3fb950; }
+    .output-line.info { color: #58a6ff; }
+    .output-line.warning { color: #d29922; }
+    .help-panel {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 100;
+      overflow-y: auto;
+    }
+    .help-panel.active { display: block; }
+    .help-content {
+      max-width: 900px;
+      margin: 40px auto;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 30px;
+    }
+    .help-content h2 { 
+      color: #58a6ff;
+      margin-top: 0;
+      border-bottom: 1px solid #30363d;
+      padding-bottom: 15px;
+    }
+    .help-section {
+      margin-bottom: 25px;
+    }
+    .help-section h3 {
+      color: #e94560;
+      font-size: 16px;
+    }
+    .help-section code {
+      background: #0d1117;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: inherit;
+      color: #7ee787;
+    }
+    .help-example {
+      background: #0d1117;
+      padding: 15px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin: 10px 0;
+      border-left: 3px solid #58a6ff;
+      white-space: pre-wrap;
+    }
+    .help-close {
+      float: right;
+      background: none;
+      border: none;
+      color: #8b949e;
+      font-size: 24px;
+      cursor: pointer;
+    }
+    .help-close:hover { color: #fff; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1><span class="header-logo">⚡ LOS</span> LocalOS Script</h1>
+    <div class="toolbar">
+      <button class="secondary" onclick="showHelp()">📖 Docs</button>
+      <button onclick="runCode()">▶ Run</button>
+      <button class="secondary" onclick="clearOutput()">Clear</button>
+      <button class="secondary" onclick="loadExample()">Example</button>
+    </div>
+  </div>
+  
+  <div class="main">
+    <div class="editor">
+      <div class="panel-header">Source Code</div>
+      <div class="code-area">
+        <div class="line-numbers" id="lineNumbers">1</div>
+        <textarea class="code-editor" id="codeEditor" spellcheck="false" oninput="updateLineNumbers()" placeholder="// Write your LOS code here...">// LOS - LocalOS Script
+// A simple and powerful programming language
+
+print("=== LOS Language Demo ===")
+print("")
+
+// Variables
+name = "InfernoidPl4y"
+version = "2.0"
+year = 2026
+
+print("Welcome, " + name + "!")
+print("LOS Version: " + version)
+print("Year: " + str(year))
+print("")
+
+// Arrays
+print("=== Arrays ===")
+fruits = ["apple", "banana", "cherry", "date"]
+print("Fruits: " + str(fruits))
+print("First fruit: " + fruits[0])
+print("Length: " + str(len(fruits)))
+print("")
+
+// Loop
+print("=== Loop ===")
+i = 1
+sum = 0
+while i <= 5 {
+    sum = sum + i
+    print("i = " + str(i) + ", sum = " + str(sum))
+    i = i + 1
+}
+print("Total sum: " + str(sum))
+print("")
+
+// Function
+function greet(person, times) {
+    i = 0
+    while i < times {
+        print("Hello, " + person + "!")
+        i = i + 1
+    }
+}
+
+print("=== Functions ===")
+greet("World", 3)
+print("")
+
+// Conditionals
+print("=== Conditionals ===")
+score = 85
+if score >= 90 {
+    print("Grade: A")
+} else if score >= 80 {
+    print("Grade: B")
+} else if score >= 70 {
+    print("Grade: C")
+} else {
+    print("Grade: F")
+}
+
+// Math
+print("")
+print("=== Math ===")
+a = 10
+b = 3
+print("10 + 3 = " + str(a + b))
+print("10 - 3 = " + str(a - b))
+print("10 * 3 = " + str(a * b))
+print("10 / 3 = " + str(a / b))
+print("10 % 3 = " + str(a % b))
+
+print("")
+print("=== Demo Complete ===")
+</textarea>
+      </div>
+    </div>
+    
+    <div class="output">
+      <div class="panel-header">Output</div>
+      <div class="output-content" id="output"></div>
+    </div>
+  </div>
+
+  <!-- Help Panel -->
+  <div class="help-panel" id="helpPanel">
+    <div class="help-content">
+      <button class="help-close" onclick="showHelp()">×</button>
+      <h2>LOS Language Reference</h2>
+      
+      <div class="help-section">
+        <h3>Variables</h3>
+        <p>LOS uses dynamic typing. Variables are declared by assignment:</p>
+        <div class="help-example">name = "John"
+age = 25
+isActive = true
+numbers = [1, 2, 3, 4, 5]</div>
+      </div>
+      
+      <div class="help-section">
+        <h3>Data Types</h3>
+        <p>LOS supports: strings, numbers, booleans, arrays</p>
+        <div class="help-example">text = "Hello"       // String
+num = 42            // Number
+pi = 3.14159       // Float
+flag = true        // Boolean
+items = [1, 2, 3]  // Array</div>
+      </div>
+      
+      <div class="help-section">
+        <h3>Operators</h3>
+        <p><code>Math:</code> <code>+</code> <code>-</code> <code>*</code> <code>/</code> <code>%</code></p>
+        <p><code>Comparison:</code> <code>==</code> <code>!=</code> <code><</code> <code>></code> <code><=</code> <code>>=</code></p>
+        <p><code>Logical:</code> <code>and</code> <code>or</code> <code>not</code></p>
+        <p><code>String:</code> <code>+</code> concatenates, <code>str()</code> converts to string</p>
+      </div>
+      
+      <div class="help-section">
+        <h3>Print</h3>
+        <div class="help-example">print("Hello World")
+print("Value: " + str(variable))
+print(42)</div>
+      </div>
+      
+      <div class="help-section">
+        <h3>Conditionals</h3>
+        <div class="help-example">if age >= 18 {
+    print("Adult")
+} else if age >= 13 {
+    print("Teen")
+} else {
+    print("Child")
+}</div>
+      </div>
+      
+      <div class="help-section">
+        <h3>Loops</h3>
+        <div class="help-example">// While loop
+i = 1
+while i <= 10 {
+    print(i)
+    i = i + 1
+}</div>
+      </div>
+      
+      <div class="help-section">
+        <h3>Functions</h3>
+        <div class="help-example">function add(a, b) {
+    return a + b
+}
+
+result = add(5, 3)
+print(result)</div>
+      </div>
+      
+      <div class="help-section">
+        <h3>Arrays</h3>
+        <div class="help-example">fruits = ["apple", "banana", "cherry"]
+print(fruits[0])      // First element
+print(len(fruits))    // Length
+fruits[] = "orange"   // Add element</div>
+      </div>
+      
+      <div class="help-section">
+        <h3>Built-in Functions</h3>
+        <p><code>print(val)</code> - Print value</p>
+        <p><code>len(arr)</code> - Array length</p>
+        <p><code>str(num)</code> - Convert to string</p>
+        <p><code>num(str)</code> - Convert to number</p>
+        <p><code>rand(min, max)</code> - Random number</p>
+        <p><code>input(prompt)</code> - Get user input (prompt)</p>
+        <p><code>time()</code> - Current timestamp</p>
+        <p><code>exit()</code> - Exit program</p>
+        <p><code>cls()</code> - Clear output</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    class LOSInterpreter {
+      constructor() {
+        this.variables = {};
+        this.functions = {};
+        this.output = [];
+        this.programCounter = 0;
+      }
+
+      print(val, type = '') {
+        this.output.push({ text: String(val), type });
+      }
+
+      error(msg) {
+        this.output.push({ text: 'Error: ' + msg, type: 'error' });
+        throw new Error(msg);
+      }
+
+      getVar(name) {
+        if (!(name in this.variables)) {
+          this.error(`Variable '${name}' not defined`);
+        }
+        return this.variables[name];
+      }
+
+      setVar(name, value) {
+        this.variables[name] = value;
+      }
+
+      evaluate(expr) {
+        if (typeof expr !== 'string') return expr;
+        expr = expr.trim();
+        
+        if (expr === '') return '';
+        
+        // String
+        if ((expr.startsWith('"') && expr.endsWith('"')) || 
+            (expr.startsWith("'") && expr.endsWith("'"))) {
+          return expr.slice(1, -1);
+        }
+        
+        // Number
+        if (!isNaN(expr) && expr !== '') {
+          return parseFloat(expr);
+        }
+        
+        // Boolean
+        if (expr === 'true') return true;
+        if (expr === 'false') return false;
+        
+        // Array
+        if (expr.startsWith('[') && expr.endsWith(']')) {
+          const content = expr.slice(1, -1).trim();
+          if (content === '') return [];
+          const items = this.parseArrayItems(content);
+          return items.map(item => this.evaluate(item));
+        }
+        
+        // Variable
+        if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(expr)) {
+          return this.getVar(expr);
+        }
+        
+        return this.evalExpression(expr);
+      }
+
+      parseArrayItems(content) {
+        const items = [];
+        let current = '';
+        let depth = 0;
+        let inString = false;
+        let stringChar = '';
+        
+        for (let i = 0; i < content.length; i++) {
+          const char = content[i];
+          
+          if (!inString && (char === '"' || char === "'")) {
+            inString = true;
+            stringChar = char;
+            current += char;
+          } else if (inString && char === stringChar && content[i-1] !== '\\') {
+            inString = false;
+            current += char;
+          } else if (!inString && char === '[') {
+            depth++;
+            current += char;
+          } else if (!inString && char === ']') {
+            depth--;
+            current += char;
+          } else if (!inString && char === ',' && depth === 0) {
+            items.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        if (current.trim()) items.push(current.trim());
+        
+        return items;
+      }
+
+      evalExpression(expr) {
+        // Handle string concatenation
+        if (expr.includes('+') && !expr.match(/^[\d\s\+\-\*\/\%\.]+$/)) {
+          const parts = expr.split('+');
+          if (parts.length > 1) {
+            return parts.map(p => {
+              p = p.trim();
+              if ((p.startsWith('"') && p.endsWith('"')) || (p.startsWith("'") && p.endsWith("'"))) return p.slice(1, -1);
+              if (!isNaN(p) && p !== '') return p;
+              try { return this.getVar(p); } catch { return p; }
+            }).join('');
+          }
+        }
+
+        // Parentheses
+        if (expr.includes('(') && expr.includes(')')) {
+          const match = expr.match(/^(\w+)\s*\((.*)\)$/);
+          if (match && !this.functions[match[1]]) {
+            return this.callBuiltIn(match[1], match[2]);
+          }
+        }
+
+        // Operators
+        const operators = [
+          ['==', '=='], ['!=', '!='], ['<=', '<='], ['>=', '>='],
+          ['<', '<'], ['>', '>'],
+          ['+', '+'], ['-', '-'], ['*', '*'], ['/', '/'], ['%', '%']
+        ];
+
+        for (const [op, symbol] of operators) {
+          const idx = expr.indexOf(op);
+          if (idx > 0) {
+            const left = expr.slice(0, idx).trim();
+            const right = expr.slice(idx + op.length).trim();
+            
+            if (left && right) {
+              try {
+                const l = this.evaluate(left);
+                const r = this.evaluate(right);
+                
+                switch (symbol) {
+                  case '+': return l + r;
+                  case '-': return l - r;
+                  case '*': return l * r;
+                  case '/': return l / r;
+                  case '%': return l % r;
+                  case '<': return l < r;
+                  case '>': return l > r;
+                  case '<=': return l <= r;
+                  case '>=': return l >= r;
+                  case '==': return l == r;
+                  case '!=': return l != r;
+                }
+              } catch {}
+            }
+          }
+        }
+
+        return expr;
+      }
+
+      callBuiltIn(name, args) {
+        const evaluatedArgs = args ? args.split(',').map(a => this.evaluate(a.trim())) : [];
+        
+        switch (name) {
+          case 'print':
+            this.print(evaluatedArgs[0]);
+            return null;
+          case 'str':
+            return String(evaluatedArgs[0]);
+          case 'num':
+          case 'int':
+            return parseFloat(evaluatedArgs[0]) || 0;
+          case 'len':
+            const arr = this.getVar(evaluatedArgs[0]);
+            return Array.isArray(arr) ? arr.length : String(arr).length;
+          case 'rand':
+            const min = evaluatedArgs[0] || 0;
+            const max = evaluatedArgs[1] || 100;
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+          case 'time':
+            return Date.now();
+          case 'exit':
+            throw new Error('Program exited');
+          case 'cls':
+            this.output = [];
+            return null;
+          default:
+            return this.error(`Unknown function: ${name}`);
+        }
+      }
+
+      run(code) {
+        this.output = [];
+        this.variables = {};
+        this.functions = {};
+        
+        const lines = code.split('\n');
+        let i = 0;
+        
+        // First pass: register functions
+        while (i < lines.length) {
+          const line = lines[i].trim();
+          if (!line || line.startsWith('//')) { i++; continue; }
+          
+          if (line.startsWith('function ')) {
+            const match = line.match(/function\s+(\w+)\s*\(([^)]*)\)\s*\{/);
+            if (match) {
+              const name = match[1];
+              const params = match[2].split(',').map(p => p.trim()).filter(p => p);
+              
+              let body = [];
+              i++;
+              let braceCount = 1;
+              
+              while (i < lines.length && braceCount > 0) {
+                const l = lines[i].trim();
+                if (l.includes('{')) braceCount += (l.match(/\{/g) || []).length;
+                if (l.includes('}')) braceCount -= (l.match(/\}/g) || []).length;
+                
+                if (braceCount > 0 && l) body.push(l);
+                i++;
+              }
+              
+              this.functions[name] = { params, body };
+              i--;
+            }
+          }
+          i++;
+        }
+        
+        // Second pass: execute
+        i = 0;
+        while (i < lines.length) {
+          try {
+            const line = lines[i].trim();
+            i++;
+            
+            if (!line || line.startsWith('//')) continue;
+            
+            // Handle braces
+            if (line === '{' || line === '}') continue;
+            
+            // Function call with assignment
+            if (line.includes('=') && !line.includes('==')) {
+              const eqIdx = line.indexOf('=');
+              const left = line.slice(0, eqIdx).trim();
+              const right = line.slice(eqIdx + 1).trim();
+              
+              // Check for function call
+              const funcMatch = right.match(/^(\w+)\s*\((.*)\)$/);
+              if (funcMatch && this.functions[funcMatch[1]]) {
+                const func = this.functions[funcMatch[1]];
+                const args = funcMatch[2] ? funcMatch[2].split(',').map(a => this.evaluate(a.trim())) : [];
+                
+                const localVars = {};
+                func.params.forEach((p, idx) => {
+                  localVars[p] = args[idx];
+                });
+                
+                const savedVars = { ...this.variables };
+                this.variables = { ...this.variables, ...localVars };
+                let retVal = null;
+                
+                for (const bodyLine of func.body) {
+                  if (bodyLine.trim().startsWith('return')) {
+                    const ret = bodyLine.replace('return', '').trim();
+                    retVal = ret ? this.evaluate(ret) : null;
+                    break;
+                  }
+                  this.executeLine(bodyLine);
+                }
+                
+                this.variables = savedVars;
+                this.setVar(left, retVal);
+                continue;
+              }
+              
+              // Regular assignment
+              const val = this.evaluate(right);
+              this.setVar(left, val);
+              continue;
+            }
+            
+            // Print
+            if (line.startsWith('print(') && line.endsWith(')')) {
+              const content = line.slice(6, -1);
+              const val = this.evaluate(content);
+              this.print(val);
+              continue;
+            }
+            
+            // If statement
+            if (line.startsWith('if ')) {
+              const condition = line.slice(3).replace(' {', '').trim();
+              
+              let ifBody = [];
+              let elseBody = [];
+              let braceCount = 0;
+              let inElse = false;
+              
+              while (i < lines.length) {
+                const l = lines[i].trim();
+                
+                if (l === '}' && braceCount === 0) {
+                  break;
+                }
+                
+                if (l.startsWith('else {') || l === 'else {') {
+                  inElse = true;
+                  i++;
+                  continue;
+                }
+                
+                if (l.startsWith('else if ')) {
+                  break;
+                }
+                
+                if (l.includes('{')) braceCount += (l.match(/\{/g) || []).length;
+                if (l.includes('}')) braceCount -= (l.match(/\}/g) || []).length;
+                
+                if (braceCount >= 0 && l) {
+                  if (!inElse) ifBody.push(l);
+                  else elseBody.push(l);
+                }
+                
+                i++;
+              }
+              
+              const condVal = this.evaluate(condition);
+              
+              if (condVal) {
+                for (const l of ifBody) {
+                  this.executeLine(l);
+                }
+              } else if (elseBody.length > 0) {
+                for (const l of elseBody) {
+                  this.executeLine(l);
+                }
+              }
+              continue;
+            }
+            
+            // While loop
+            if (line.startsWith('while ')) {
+              const condition = line.slice(6).replace(' {', '').trim();
+              
+              let loopBody = [];
+              let braceCount = 0;
+              
+              i++;
+              while (i < lines.length) {
+                const l = lines[i].trim();
+                
+                if (l === '}' && braceCount === 0) {
+                  break;
+                }
+                
+                if (l.includes('{')) braceCount += (l.match(/\{/g) || []).length;
+                if (l.includes('}')) braceCount -= (l.match(/\}/g) || []).length;
+                
+                if (braceCount >= 0 && l) loopBody.push(l);
+                
+                i++;
+              }
+              
+              while (this.evaluate(condition)) {
+                for (const l of loopBody) {
+                  this.executeLine(l);
+                }
+              }
+              continue;
+            }
+            
+            // Array push
+            if (line.includes('[] =')) {
+              const match = line.match(/(\w+)\[\]\s*=\s*(.+)/);
+              if (match) {
+                const arrName = match[1];
+                const val = this.evaluate(match[2]);
+                const arr = this.getVar(arrName);
+                if (Array.isArray(arr)) {
+                  arr.push(val);
+                  this.setVar(arrName, arr);
+                }
+                continue;
+              }
+            }
+            
+            // Regular line execution
+            this.executeLine(line);
+            
+          } catch (e) {
+            if (e.message === 'Program exited') throw e;
+            this.output.push({ text: 'Error: ' + e.message, type: 'error' });
+          }
+        }
+        
+        return this.output;
+      }
+
+      executeLine(line) {
+        line = line.trim();
+        if (!line || line === '{' || line === '}') return;
+        
+        // Assignment
+        if (line.includes('=') && !line.includes('==')) {
+          const eqIdx = line.indexOf('=');
+          const left = line.slice(0, eqIdx).trim();
+          const right = line.slice(eqIdx + 1).trim();
+          const val = this.evaluate(right);
+          this.setVar(left, val);
+          return;
+        }
+        
+        // Print
+        if (line.startsWith('print(') && line.endsWith(')')) {
+          const content = line.slice(6, -1);
+          const val = this.evaluate(content);
+          this.print(val);
+          return;
+        }
+        
+        // Function call (no assignment)
+        const funcMatch = line.match(/^(\w+)\s*\((.*)\)$/);
+        if (funcMatch && this.functions[funcMatch[1]]) {
+          const func = this.functions[funcMatch[1]];
+          const args = funcMatch[2] ? funcMatch[2].split(',').map(a => this.evaluate(a.trim())) : [];
+          
+          const localVars = {};
+          func.params.forEach((p, idx) => {
+            localVars[p] = args[idx];
+          });
+          
+          const savedVars = { ...this.variables };
+          this.variables = { ...this.variables, ...localVars };
+          
+          for (const bodyLine of func.body) {
+            if (bodyLine.trim().startsWith('return')) {
+              const ret = bodyLine.replace('return', '').trim();
+              const retVal = ret ? this.evaluate(ret) : null;
+              this.variables = savedVars;
+              return retVal;
+            }
+            this.executeLine(bodyLine);
+          }
+          
+          this.variables = savedVars;
+          return;
+        }
+        
+        // Built-in calls
+        if (line.startsWith('print(')) {
+          this.callBuiltIn('print', line.slice(6, -1));
+          return;
+        }
+      }
+    }
+
+    function runCode() {
+      const code = document.getElementById('codeEditor').value;
+      const output = document.getElementById('output');
+      
+      output.innerHTML = '';
+      
+      try {
+        const los = new LOSInterpreter();
+        const result = los.run(code);
+        
+        output.innerHTML = result.map(line => 
+          `<div class="output-line ${line.type}">${escapeHtml(line.text)}</div>`
+        ).join('');
+        
+        if (result.length === 0) {
+          output.innerHTML = '<div class="output-line" style="color: #8b949e">(No output)</div>';
+        }
+      } catch (e) {
+        if (e.message !== 'Program exited') {
+          output.innerHTML += `<div class="output-line error">${escapeHtml(e.message)}</div>`;
+        }
+      }
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function updateLineNumbers() {
+      const editor = document.getElementById('codeEditor');
+      const lines = editor.value.split('\n').length;
+      const numbers = Array.from({ length: lines }, (_, i) => i + 1).join('\n');
+      document.getElementById('lineNumbers').textContent = numbers;
+    }
+
+    function clearOutput() {
+      document.getElementById('output').innerHTML = '';
+    }
+
+    function showHelp() {
+      document.getElementById('helpPanel').classList.toggle('active');
+    }
+
+    function loadExample() {
+      const examples = [
+        `// FizzBuzz in LOS
+print("FizzBuzz Demo:")
+i = 1
+while i <= 20 {
+    if i % 15 == 0 {
+        print("FizzBuzz")
+    } else if i % 3 == 0 {
+        print("Fizz")
+    } else if i % 5 == 0 {
+        print("Buzz")
+    } else {
+        print(i)
+    }
+    i = i + 1
+}`,
+        `// Array operations
+print("Array Demo:")
+nums = [5, 3, 8, 1, 9]
+print("Original: " + str(nums))
+
+// Find max
+max = nums[0]
+i = 1
+while i < len(nums) {
+    if nums[i] > max {
+        max = nums[i]
+    }
+    i = i + 1
+}
+print("Max: " + str(max))`,
+        `// Factorial function
+function factorial(n) {
+    if n <= 1 {
+        return 1
+    }
+    return n * factorial(n - 1)
+}
+
+print("Factorial of 5: " + str(factorial(5)))
+print("Factorial of 10: " + str(factorial(10)))`
+      ];
+      
+      const example = examples[Math.floor(Math.random() * examples.length)];
+      document.getElementById('codeEditor').value = example;
+      updateLineNumbers();
+    }
+
+    updateLineNumbers();
+  </script>
+</body>
+</html>

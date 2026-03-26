@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>App Store - LocalOS</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      background: #0d1117;
+      color: #c9d1d9;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .header {
+      padding: 20px;
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+    }
+    .header h1 { margin: 0 0 15px 0; font-size: 24px; }
+    .search-bar {
+      display: flex;
+      gap: 10px;
+    }
+    .search-bar input {
+      flex: 1;
+      padding: 12px 15px;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #c9d1d9;
+      font-size: 14px;
+    }
+    .search-bar input:focus {
+      outline: none;
+      border-color: #58a6ff;
+    }
+    .tabs {
+      display: flex;
+      gap: 5px;
+      padding: 15px 20px;
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+    }
+    .tab {
+      padding: 10px 20px;
+      background: transparent;
+      border: none;
+      color: #8b949e;
+      cursor: pointer;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .tab.active {
+      background: #21262d;
+      color: #58a6ff;
+    }
+    .tab:hover:not(.active) { color: #c9d1d9; }
+    .content {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    .apps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+    }
+    .app-card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .app-card:hover {
+      border-color: #58a6ff;
+      transform: translateY(-2px);
+    }
+    .app-card.installed {
+      border-color: #3fb950;
+    }
+    .app-icon {
+      width: 64px;
+      height: 64px;
+      background: #21262d;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      margin-bottom: 15px;
+    }
+    .app-name {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+    .app-author {
+      font-size: 12px;
+      color: #8b949e;
+      margin-bottom: 10px;
+    }
+    .app-desc {
+      font-size: 13px;
+      color: #8b949e;
+      margin-bottom: 15px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .app-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .app-version {
+      font-size: 12px;
+      color: #8b949e;
+    }
+    .app-btn {
+      padding: 6px 16px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .app-btn.install {
+      background: #238636;
+      color: white;
+    }
+    .app-btn.install:hover { background: #2ea043; }
+    .app-btn.installed {
+      background: #21262d;
+      color: #8b949e;
+    }
+    .app-btn.open {
+      background: #58a6ff;
+      color: white;
+    }
+    .category-section {
+      margin-bottom: 30px;
+    }
+    .category-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #30363d;
+    }
+    .installed-apps {
+      padding: 15px;
+      background: #161b22;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .installed-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+      border-bottom: 1px solid #30363d;
+    }
+    .installed-item:last-child { border-bottom: none; }
+    .installed-info {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    .installed-icon {
+      width: 40px;
+      height: 40px;
+      background: #21262d;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal.active { display: flex; }
+    .modal-content {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      width: 500px;
+      max-width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .modal-header {
+      padding: 20px;
+      border-bottom: 1px solid #30363d;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      color: #8b949e;
+      font-size: 24px;
+      cursor: pointer;
+    }
+    .modal-body {
+      padding: 20px;
+    }
+    .app-detail-icon {
+      width: 80px;
+      height: 80px;
+      background: #21262d;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      margin: 0 auto 20px;
+    }
+    .app-detail-title {
+      text-align: center;
+      font-size: 24px;
+      margin-bottom: 5px;
+    }
+    .app-detail-author {
+      text-align: center;
+      color: #8b949e;
+      margin-bottom: 20px;
+    }
+    .app-detail-desc {
+      color: #c9d1d9;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+    .app-detail-stats {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .stat {
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 20px;
+      font-weight: 600;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: #8b949e;
+    }
+    .app-detail-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>App Store</h1>
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Search apps..." oninput="searchApps()">
+    </div>
+  </div>
+  
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('browse')">Browse</button>
+    <button class="tab" onclick="showTab('installed')">Installed</button>
+    <button class="tab" onclick="showTab('updates')">Updates</button>
+  </div>
+  
+  <div class="content" id="content">
+    <div class="category-section">
+      <div class="category-title">Featured Apps</div>
+      <div class="apps-grid" id="featuredApps"></div>
+    </div>
+    
+    <div class="category-section">
+      <div class="category-title">Productivity</div>
+      <div class="apps-grid" id="productivityApps"></div>
+    </div>
+    
+    <div class="category-section">
+      <div class="category-title">Utilities</div>
+      <div class="apps-grid" id="utilityApps"></div>
+    </div>
+  </div>
+
+  <!-- App Detail Modal -->
+  <div class="modal" id="appModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span></span>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="app-detail-icon" id="modalIcon">📦</div>
+        <div class="app-detail-title" id="modalTitle">App Name</div>
+        <div class="app-detail-author" id="modalAuthor">by Author</div>
+        <div class="app-detail-desc" id="modalDesc">Description</div>
+        <div class="app-detail-stats">
+          <div class="stat">
+            <div class="stat-value" id="modalVersion">1.0.0</div>
+            <div class="stat-label">Version</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value" id="modalDownloads">0</div>
+            <div class="stat-label">Downloads</div>
+          </div>
+        </div>
+        <div class="app-detail-actions">
+          <button class="app-btn install" id="modalInstallBtn" onclick="installFromModal()">Install</button>
+          <button class="app-btn open" id="modalOpenBtn" onclick="openFromModal()" style="display:none;">Open</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentTab = 'browse';
+    let selectedApp = null;
+    let installedApps = JSON.parse(localStorage.getItem('installedApps') || '[]');
+
+    const storeApps = [
+      {
+        id: 'terminal',
+        name: 'Terminal',
+        author: 'LocalOS',
+        icon: '💻',
+        description: 'Command line terminal emulator with file management',
+        version: '1.0.0',
+        downloads: 1250,
+        category: 'utility',
+        installed: false
+      },
+      {
+        id: 'filemanager',
+        name: 'File Manager',
+        author: 'LocalOS',
+        icon: '📁',
+        description: 'File manager with FTP integration for remote connections',
+        version: '1.0.0',
+        downloads: 980,
+        category: 'utility',
+        installed: false
+      },
+      {
+        id: 'breakcode',
+        name: 'BreakCode',
+        author: 'LocalOS',
+        icon: '💻',
+        description: 'Powerful code editor with syntax highlighting and plugin support',
+        version: '1.0.0',
+        downloads: 1500,
+        category: 'productivity',
+        installed: false
+      },
+      {
+        id: 'calculator',
+        name: 'Calculator',
+        author: 'LocalOS',
+        icon: '🔢',
+        description: 'Simple calculator for basic arithmetic operations',
+        version: '1.0.0',
+        downloads: 800,
+        category: 'utility',
+        installed: false
+      },
+      {
+        id: 'notepad',
+        name: 'Notepad',
+        author: 'LocalOS',
+        icon: '📝',
+        description: 'Simple text editor for notes and documents',
+        version: '1.0.0',
+        downloads: 1100,
+        category: 'productivity',
+        installed: false
+      },
+      {
+        id: 'media',
+        name: 'Media Player',
+        author: 'LocalOS',
+        icon: '🎬',
+        description: 'Audio and video player with playlist support',
+        version: '1.0.0',
+        downloads: 750,
+        category: 'utility',
+        installed: false
+      },
+      {
+        id: 'chat',
+        name: 'Internal Chat',
+        author: 'LocalOS',
+        icon: '💬',
+        description: 'Chat with other users on this system',
+        version: '1.0.0',
+        downloads: 600,
+        category: 'productivity',
+        installed: false
+      },
+      {
+        id: 'settings',
+        name: 'Settings',
+        author: 'LocalOS',
+        icon: '⚙️',
+        description: 'System settings and customization options',
+        version: '1.0.0',
+        downloads: 2000,
+        category: 'utility',
+        installed: false
+      }
+    ];
+
+    function getAppsWithStatus() {
+      return storeApps.map(app => ({
+        ...app,
+        installed: installedApps.includes(app.id)
+      }));
+    }
+
+    function renderApps() {
+      const apps = getAppsWithStatus();
+      
+      const featured = apps.filter(a => a.downloads > 1000);
+      const productivity = apps.filter(a => a.category === 'productivity');
+      const utility = apps.filter(a => a.category === 'utility');
+      
+      document.getElementById('featuredApps').innerHTML = featured.map(renderAppCard).join('');
+      document.getElementById('productivityApps').innerHTML = productivity.map(renderAppCard).join('');
+      document.getElementById('utilityApps').innerHTML = utility.map(renderAppCard).join('');
+    }
+
+    function renderAppCard(app) {
+      const btnText = app.installed ? 'Installed' : 'Install';
+      const btnClass = app.installed ? 'installed' : 'install';
+      const borderClass = app.installed ? 'installed' : '';
+      
+      return `
+        <div class="app-card ${borderClass}" onclick="showAppDetail('${app.id}')">
+          <div class="app-icon">${app.icon}</div>
+          <div class="app-name">${app.name}</div>
+          <div class="app-author">by ${app.author}</div>
+          <div class="app-desc">${app.description}</div>
+          <div class="app-meta">
+            <span class="app-version">v${app.version}</span>
+            <button class="app-btn ${btnClass}" onclick="event.stopPropagation(); toggleInstall('${app.id}')">${btnText}</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function showTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      const content = document.getElementById('content');
+      
+      if (tab === 'browse') {
+        renderApps();
+      } else if (tab === 'installed') {
+        renderInstalledApps();
+      } else if (tab === 'updates') {
+        renderUpdates();
+      }
+    }
+
+    function renderInstalledApps() {
+      const apps = getAppsWithStatus().filter(a => a.installed);
+      const content = document.getElementById('content');
+      
+      if (apps.length === 0) {
+        content.innerHTML = '<div style="text-align:center;padding:40px;color:#8b949e;">No apps installed yet</div>';
+        return;
+      }
+      
+      content.innerHTML = `
+        <div class="installed-apps">
+          ${apps.map(app => `
+            <div class="installed-item">
+              <div class="installed-info">
+                <div class="installed-icon">${app.icon}</div>
+                <div>
+                  <div class="app-name">${app.name}</div>
+                  <div class="app-version">v${app.version}</div>
+                </div>
+              </div>
+              <div>
+                <button class="app-btn open" onclick="openApp('${app.id}')">Open</button>
+                <button class="app-btn installed" onclick="uninstallApp('${app.id}')">Uninstall</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function renderUpdates() {
+      const apps = getAppsWithStatus().filter(a => a.installed);
+      const content = document.getElementById('content');
+      
+      if (apps.length === 0) {
+        content.innerHTML = '<div style="text-align:center;padding:40px;color:#8b949e;">All apps are up to date</div>';
+        return;
+      }
+      
+      content.innerHTML = `
+        <div style="text-align:center;padding:40px;color:#8b949e;">
+          <div style="font-size:48px;margin-bottom:20px;">✓</div>
+          All apps are up to date
+        </div>
+      `;
+    }
+
+    function searchApps() {
+      const query = document.getElementById('searchInput').value.toLowerCase();
+      const apps = getAppsWithStatus().filter(app => 
+        app.name.toLowerCase().includes(query) || 
+        app.description.toLowerCase().includes(query)
+      );
+      
+      const content = document.getElementById('content');
+      content.innerHTML = `
+        <div class="apps-grid">
+          ${apps.map(renderAppCard).join('')}
+        </div>
+      `;
+    }
+
+    function showAppDetail(appId) {
+      selectedApp = getAppsWithStatus().find(a => a.id === appId);
+      if (!selectedApp) return;
+      
+      document.getElementById('modalIcon').textContent = selectedApp.icon;
+      document.getElementById('modalTitle').textContent = selectedApp.name;
+      document.getElementById('modalAuthor').textContent = 'by ' + selectedApp.author;
+      document.getElementById('modalDesc').textContent = selectedApp.description;
+      document.getElementById('modalVersion').textContent = selectedApp.version;
+      document.getElementById('modalDownloads').textContent = selectedApp.downloads;
+      
+      const installBtn = document.getElementById('modalInstallBtn');
+      const openBtn = document.getElementById('modalOpenBtn');
+      
+      if (selectedApp.installed) {
+        installBtn.textContent = 'Installed';
+        installBtn.className = 'app-btn installed';
+        openBtn.style.display = 'block';
+      } else {
+        installBtn.textContent = 'Install';
+        installBtn.className = 'app-btn install';
+        openBtn.style.display = 'none';
+      }
+      
+      document.getElementById('appModal').classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('appModal').classList.remove('active');
+    }
+
+    function toggleInstall(appId) {
+      const index = installedApps.indexOf(appId);
+      if (index > -1) {
+        installedApps.splice(index, 1);
+      } else {
+        installedApps.push(appId);
+      }
+      localStorage.setItem('installedApps', JSON.stringify(installedApps));
+      
+      if (currentTab === 'browse') {
+        renderApps();
+      } else if (currentTab === 'installed') {
+        renderInstalledApps();
+      }
+    }
+
+    function installFromModal() {
+      if (selectedApp) {
+        toggleInstall(selectedApp.id);
+        showAppDetail(selectedApp.id);
+      }
+    }
+
+    function openFromModal() {
+      if (selectedApp) {
+        openApp(selectedApp.id);
+      }
+    }
+
+    function uninstallApp(appId) {
+      toggleInstall(appId);
+      renderInstalledApps();
+    }
+
+    function openApp(appId) {
+      window.parent.postMessage({ action: 'openApp', appId: appId }, '*');
+    }
+
+    renderApps();
+  </script>
+</body>
+</html>

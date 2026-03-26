@@ -1,0 +1,11 @@
+# Necesitamos construir:
+- Terminal
+- Editor de codigo + Sistema de plugins
+- File Manager con integracion para FTP
+- APP Manager + Apartado de tienda
+- Crear un Lenguaje de programacion para programar en este sistema operativo(con el obj de q todas las futuras aplicaciones se creen en ese lenguaje)
+- Media APP(reproduccion de sonido y video)
+- Apartados de personalizacion + permitir crear DOTFILES
+- Internal Chat(Permite comunicarse con otros usuarios registrados en ese sistema)
+- Global Chat(Permite comunicarse con todos los usuarios del mundo, q usen LocalOS)
+- Crear "Gestor de Paquetes" ya q voy a crear un repositorio

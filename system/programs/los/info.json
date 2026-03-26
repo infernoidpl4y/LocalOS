@@ -1,0 +1,9 @@
+{
+  "name": "LOS Language",
+  "description": "LocalOS Script - Programming language for LocalOS apps",
+  "icon": "code.png",
+  "type": "php",
+  "entry": "index.html",
+  "version": "2.0.0",
+  "author": "LocalOS"
+}

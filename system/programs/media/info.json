@@ -1,0 +1,9 @@
+{
+  "name": "Media Player",
+  "description": "Audio and video player with playlist support",
+  "icon": "play.png",
+  "type": "php",
+  "entry": "index.html",
+  "version": "2.0.0",
+  "author": "LocalOS"
+}

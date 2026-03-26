@@ -1,0 +1,9 @@
+{
+  "name": "Internal Chat",
+  "description": "Chat with other users on this system",
+  "icon": "chat.png",
+  "type": "php",
+  "entry": "index.html",
+  "version": "2.0.0",
+  "author": "LocalOS"
+}

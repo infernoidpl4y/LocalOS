@@ -1,0 +1,9 @@
+{
+  "name": "Global Chat",
+  "description": "Chat with LocalOS users around the world",
+  "icon": "globe.png",
+  "type": "php",
+  "entry": "index.html",
+  "version": "2.0.0",
+  "author": "LocalOS"
+}

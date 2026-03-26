@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Media Player - LocalOS</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      background: #1a1a2e;
+      color: #eee;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .tabs {
+      display: flex;
+      background: #16213e;
+      border-bottom: 1px solid #0f3460;
+    }
+    .tab {
+      padding: 15px 25px;
+      background: transparent;
+      border: none;
+      color: #8b949e;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .tab.active {
+      color: #e94560;
+      border-bottom: 2px solid #e94560;
+    }
+    .main {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+    .playlist {
+      width: 280px;
+      background: #16213e;
+      border-right: 1px solid #0f3460;
+      display: flex;
+      flex-direction: column;
+    }
+    .playlist-header {
+      padding: 15px;
+      border-bottom: 1px solid #0f3460;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .playlist-header h3 { margin: 0; font-size: 14px; }
+    .playlist-add {
+      background: #e94560;
+      border: none;
+      color: white;
+      padding: 5px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .playlist-items {
+      flex: 1;
+      overflow-y: auto;
+    }
+    .playlist-item {
+      padding: 12px 15px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid #0f3460;
+    }
+    .playlist-item:hover { background: #0f3460; }
+    .playlist-item.active {
+      background: #e94560;
+    }
+    .playlist-item-icon {
+      font-size: 20px;
+    }
+    .playlist-item-info {
+      flex: 1;
+      overflow: hidden;
+    }
+    .playlist-item-title {
+      font-size: 13px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .playlist-item-duration {
+      font-size: 11px;
+      color: #8b949e;
+    }
+    .player-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .video-container {
+      width: 100%;
+      max-width: 800px;
+      aspect-ratio: 16/9;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    .video-container video {
+      width: 100%;
+      height: 100%;
+    }
+    .audio-visual {
+      width: 200px;
+      height: 200px;
+      background: linear-gradient(135deg, #e94560, #0f3460);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 80px;
+      margin-bottom: 20px;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    .now-playing {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .now-playing-title {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+    .now-playing-artist {
+      color: #8b949e;
+    }
+    .controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+      width: 100%;
+      max-width: 600px;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: #0f3460;
+      border-radius: 3px;
+      cursor: pointer;
+      position: relative;
+    }
+    .progress-fill {
+      height: 100%;
+      background: #e94560;
+      border-radius: 3px;
+      width: 0%;
+    }
+    .progress-time {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      font-size: 12px;
+      color: #8b949e;
+    }
+    .buttons {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+    .btn {
+      background: none;
+      border: none;
+      color: #eee;
+      cursor: pointer;
+      font-size: 24px;
+      padding: 10px;
+      border-radius: 50%;
+      transition: background 0.2s;
+    }
+    .btn:hover { background: #0f3460; }
+    .btn-play {
+      width: 60px;
+      height: 60px;
+      background: #e94560;
+      font-size: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-play:hover { background: #ff6b6b; }
+    .volume-control {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .volume-slider {
+      width: 100px;
+      height: 4px;
+      -webkit-appearance: none;
+      background: #0f3460;
+      border-radius: 2px;
+    }
+    .volume-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      background: #e94560;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 60px;
+      color: #8b949e;
+    }
+    .empty-state-icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('music')">🎵 Music</button>
+    <button class="tab" onclick="switchTab('video')">🎬 Video</button>
+  </div>
+  
+  <div class="main">
+    <div class="playlist">
+      <div class="playlist-header">
+        <h3>Playlist</h3>
+        <button class="playlist-add" onclick="addFiles()">+ Add</button>
+      </div>
+      <div class="playlist-items" id="playlist"></div>
+    </div>
+    
+    <div class="player-area" id="playerArea">
+      <div class="empty-state">
+        <div class="empty-state-icon">🎵</div>
+        <div>No media files</div>
+        <div style="margin-top:10px;font-size:13px;">Click "Add" to add files</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentType = 'music';
+    let playlist = [];
+    let currentIndex = -1;
+    let isPlaying = false;
+    let audio = null;
+    let video = null;
+
+    function switchTab(type) {
+      currentType = type;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      renderPlayer();
+    }
+
+    function addFiles() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.multiple = true;
+      input.accept = currentType === 'music' ? 'audio/*' : 'video/*';
+      input.onchange = () => {
+        for (const file of input.files) {
+          playlist.push({
+            name: file.name,
+            url: URL.createObjectURL(file),
+            type: currentType
+          });
+        }
+        renderPlaylist();
+        if (playlist.length === 1) {
+          playIndex(0);
+        }
+      };
+      input.click();
+    }
+
+    function renderPlaylist() {
+      const container = document.getElementById('playlist');
+      container.innerHTML = playlist.map((item, i) => `
+        <div class="playlist-item ${i === currentIndex ? 'active' : ''}" onclick="playIndex(${i})">
+          <span class="playlist-item-icon">${item.type === 'music' ? '🎵' : '🎬'}</span>
+          <div class="playlist-item-info">
+            <div class="playlist-item-title">${item.name}</div>
+          </div>
+          <button onclick="event.stopPropagation();removeFromPlaylist(${i})" style="background:none;border:none;color:#8b949e;cursor:pointer;">×</button>
+        </div>
+      `).join('');
+    }
+
+    function renderPlayer() {
+      const container = document.getElementById('playerArea');
+      
+      if (playlist.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">${currentType === 'music' ? '🎵' : '🎬'}</div>
+            <div>No media files</div>
+            <div style="margin-top:10px;font-size:13px;">Click "Add" to add files</div>
+          </div>
+        `;
+        return;
+      }
+
+      if (currentType === 'music') {
+        container.innerHTML = `
+          <div class="audio-visual" id="visual">🎵</div>
+          <div class="now-playing">
+            <div class="now-playing-title" id="title">${playlist[currentIndex]?.name || 'No track'}</div>
+            <div class="now-playing-artist">LocalOS Media Player</div>
+          </div>
+          <div class="controls">
+            <div class="progress-bar" onclick="seek(event)">
+              <div class="progress-fill" id="progress"></div>
+            </div>
+            <div class="progress-time">
+              <span id="currentTime">0:00</span>
+              <span id="duration">0:00</span>
+            </div>
+            <div class="buttons">
+              <button class="btn" onclick="prev()">⏮</button>
+              <button class="btn btn-play" id="playBtn" onclick="togglePlay()">▶</button>
+              <button class="btn" onclick="next()">⏭</button>
+            </div>
+            <div class="volume-control">
+              <span>🔊</span>
+              <input type="range" class="volume-slider" min="0" max="1" step="0.1" value="1" onchange="setVolume(this.value)">
+            </div>
+          </div>
+        `;
+      } else {
+        container.innerHTML = `
+          <div class="video-container">
+            <video id="videoPlayer" onended="next()"></video>
+          </div>
+          <div class="now-playing">
+            <div class="now-playing-title" id="title">${playlist[currentIndex]?.name || 'No video'}</div>
+          </div>
+          <div class="controls">
+            <div class="progress-bar" onclick="seekVideo(event)">
+              <div class="progress-fill" id="progress"></div>
+            </div>
+            <div class="progress-time">
+              <span id="currentTime">0:00</span>
+              <span id="duration">0:00</span>
+            </div>
+            <div class="buttons">
+              <button class="btn" onclick="prev()">⏮</button>
+              <button class="btn btn-play" id="playBtn" onclick="togglePlay()">▶</button>
+              <button class="btn" onclick="next()">⏭</button>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function playIndex(index) {
+      currentIndex = index;
+      isPlaying = true;
+      renderPlaylist();
+      renderPlayer();
+      
+      if (currentType === 'music') {
+        if (audio) audio.pause();
+        audio = new Audio(playlist[index].url);
+        audio.play();
+        audio.ontimeupdate = updateProgress;
+        audio.onended = next;
+      } else {
+        const videoEl = document.getElementById('videoPlayer');
+        videoEl.src = playlist[index].url;
+        videoEl.play();
+        videoEl.ontimeupdate = updateVideoProgress;
+        videoEl.onended = next;
+      }
+      
+      updatePlayButton();
+    }
+
+    function togglePlay() {
+      if (currentIndex < 0) return;
+      
+      isPlaying = !isPlaying;
+      
+      if (currentType === 'music') {
+        if (isPlaying) audio.play();
+        else audio.pause();
+      } else {
+        const v = document.getElementById('videoPlayer');
+        if (isPlaying) v.play();
+        else v.pause();
+      }
+      
+      updatePlayButton();
+    }
+
+    function updatePlayButton() {
+      const btn = document.getElementById('playBtn');
+      if (btn) btn.textContent = isPlaying ? '⏸' : '▶';
+    }
+
+    function updateProgress() {
+      if (!audio) return;
+      const percent = (audio.currentTime / audio.duration) * 100;
+      document.getElementById('progress').style.width = percent + '%';
+      document.getElementById('currentTime').textContent = formatTime(audio.currentTime);
+      document.getElementById('duration').textContent = formatTime(audio.duration);
+    }
+
+    function updateVideoProgress() {
+      const v = document.getElementById('videoPlayer');
+      if (!v) return;
+      const percent = (v.currentTime / v.duration) * 100;
+      document.getElementById('progress').style.width = percent + '%';
+      document.getElementById('currentTime').textContent = formatTime(v.currentTime);
+      document.getElementById('duration').textContent = formatTime(v.duration);
+    }
+
+    function seek(e) {
+      if (!audio) return;
+      const percent = e.offsetX / e.target.offsetWidth;
+      audio.currentTime = percent * audio.duration;
+    }
+
+    function seekVideo(e) {
+      const v = document.getElementById('videoPlayer');
+      if (!v) return;
+      const percent = e.offsetX / e.target.offsetWidth;
+      v.currentTime = percent * v.duration;
+    }
+
+    function prev() {
+      if (currentIndex > 0) playIndex(currentIndex - 1);
+    }
+
+    function next() {
+      if (currentIndex < playlist.length - 1) playIndex(currentIndex + 1);
+    }
+
+    function setVolume(val) {
+      if (audio) audio.volume = val;
+      const v = document.getElementById('videoPlayer');
+      if (v) v.volume = val;
+    }
+
+    function removeFromPlaylist(index) {
+      playlist.splice(index, 1);
+      if (index < currentIndex) currentIndex--;
+      else if (index === currentIndex) {
+        if (playlist.length > 0) {
+          playIndex(Math.min(currentIndex, playlist.length - 1));
+        } else {
+          currentIndex = -1;
+          if (audio) audio.pause();
+          const v = document.getElementById('videoPlayer');
+          if (v) v.pause();
+          renderPlayer();
+        }
+      }
+      renderPlaylist();
+    }
+
+    function formatTime(seconds) {
+      if (!seconds || isNaN(seconds)) return '0:00';
+      const m = Math.floor(seconds / 60);
+      const s = Math.floor(seconds % 60);
+      return m + ':' + s.toString().padStart(2, '0');
+    }
+
+    renderPlayer();
+  </script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "name": "App Store",
+  "description": "Application manager and store",
+  "icon": "store.png",
+  "type": "php",
+  "entry": "index.html",
+  "version": "2.0.0",
+  "author": "LocalOS"
+}

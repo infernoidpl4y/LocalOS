@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terminal - LocalOS</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      background: #0d1117;
+      color: #c9d1d9;
+      font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+      font-size: 14px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .terminal {
+      flex: 1;
+      padding: 10px;
+      overflow-y: auto;
+      cursor: text;
+    }
+    .terminal::-webkit-scrollbar { width: 8px; }
+    .terminal::-webkit-scrollbar-track { background: #161b22; }
+    .terminal::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+    .output { white-space: pre-wrap; word-break: break-all; }
+    .output .error { color: #f85149; }
+    .output .success { color: #3fb950; }
+    .output .info { color: #58a6ff; }
+    .input-line {
+      display: flex;
+      align-items: center;
+      margin-top: 5px;
+    }
+    .prompt {
+      color: #7ee787;
+      margin-right: 8px;
+      white-space: nowrap;
+    }
+    .prompt .user { color: #7ee787; }
+    .prompt .path { color: #79c0ff; }
+    #command-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #c9d1d9;
+      font-family: inherit;
+      font-size: inherit;
+      outline: none;
+      caret-color: #58a6ff;
+    }
+    .welcome {
+      color: #58a6ff;
+      margin-bottom: 10px;
+    }
+    .toolbar {
+      display: flex;
+      gap: 5px;
+      padding: 5px 10px;
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+    }
+    .toolbar button {
+      background: #21262d;
+      border: 1px solid #30363d;
+      color: #c9d1d9;
+      padding: 4px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .toolbar button:hover { background: #30363d; }
+    .clear-btn { color: #f85149 !important; }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <button onclick="clearTerminal()">Clear</button>
+    <button onclick="showHelp()">Help</button>
+  </div>
+  <div class="terminal" id="terminal" onclick="document.getElementById('command-input').focus()">
+    <div class="output" id="output"></div>
+    <div class="input-line">
+      <span class="prompt"><span class="user">user@localos</span>:<span class="path">~</span>$</span>
+      <input type="text" id="command-input" autocomplete="off" spellcheck="false">
+    </div>
+  </div>
+
+  <script>
+    const output = document.getElementById('output');
+    const input = document.getElementById('command-input');
+    const terminal = document.getElementById('terminal');
+    let commandHistory = [];
+    let historyIndex = -1;
+    let currentPath = '/home/user';
+
+    const commands = {
+      help: 'Mostrar ayuda',
+      clear: 'Limpiar terminal',
+      echo: 'Imprimir texto',
+      date: 'Mostrar fecha y hora',
+      whoami: 'Usuario actual',
+      pwd: 'Directorio actual',
+      ls: 'Listar archivos',
+      cat: 'Mostrar contenido de archivo',
+      mkdir: 'Crear directorio',
+      touch: 'Crear archivo vacío',
+      rm: 'Eliminar archivo/directorio',
+      cd: 'Cambiar directorio',
+      history: 'Historial de comandos',
+      neofetch: 'Información del sistema',
+      calc: 'Calculadora simple',
+      uptime: 'Tiempo de actividad',
+      hostname: 'Nombre del host',
+      env: 'Variables de entorno'
+    };
+
+    function print(text, className = '') {
+      const div = document.createElement('div');
+      div.className = className;
+      div.textContent = text;
+      output.appendChild(div);
+      terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    function printHTML(html) {
+      const div = document.createElement('div');
+      div.innerHTML = html;
+      output.appendChild(div);
+      terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    function showWelcome() {
+      printHTML(`
+<div class="welcome">
+╔═══════════════════════════════════════════════════════════╗
+║           LocalOS Terminal v1.0.0                        ║
+║  Escribe 'help' para ver los comandos disponibles         ║
+╚═══════════════════════════════════════════════════════════╝
+</div>`);
+    }
+
+    function showHelp() {
+      print('Comandos disponibles:', 'info');
+      print('');
+      for (const [cmd, desc] of Object.entries(commands)) {
+        print(`  ${cmd.padEnd(12)} - ${desc}`);
+      }
+      print('');
+    }
+
+    function clearTerminal() {
+      output.innerHTML = '';
+    }
+
+    async function executeCommand(cmd) {
+      const parts = cmd.trim().split(/\s+/);
+      const command = parts[0].toLowerCase();
+      const args = parts.slice(1);
+
+      if (!command) return;
+
+      commandHistory.push(cmd);
+      historyIndex = commandHistory.length;
+
+      print(`user@localos:${currentPath}$ ${cmd}`);
+
+      switch (command) {
+        case 'help':
+          showHelp();
+          break;
+        case 'clear':
+          clearTerminal();
+          break;
+        case 'echo':
+          print(args.join(' '));
+          break;
+        case 'date':
+          print(new Date().toString());
+          break;
+        case 'whoami':
+          print('user');
+          break;
+        case 'pwd':
+          print(currentPath);
+          break;
+        case 'hostname':
+          print('localos');
+          break;
+        case 'uptime':
+          const uptime = Math.floor(performance.now() / 1000);
+          const hours = Math.floor(uptime / 3600);
+          const mins = Math.floor((uptime % 3600) / 60);
+          print(`  ${hours}h ${mins}m en LocalOS Terminal`);
+          break;
+        case 'ls':
+          try {
+            const response = await fetch('api/ls.php');
+            const data = await response.json();
+            if (data.files && data.files.length > 0) {
+              let output = '';
+              data.files.forEach(f => {
+                output += f.isDir ? `\x1b[34m${f.name}/\x1b[0m  ` : `${f.name}  `;
+              });
+              print(output);
+            } else {
+              print('(vacío)');
+            }
+          } catch (e) {
+            print('Error al listar archivos', 'error');
+          }
+          break;
+        case 'cd':
+          if (args.length === 0) {
+            currentPath = '/home/user';
+          } else {
+            currentPath = args[0];
+          }
+          updatePrompt();
+          break;
+        case 'cat':
+          if (args.length === 0) {
+            print('Uso: cat <archivo>', 'error');
+          } else {
+            try {
+              const response = await fetch('api/cat.php?file=' + encodeURIComponent(args[0]));
+              const data = await response.json();
+              if (data.error) {
+                print(data.error, 'error');
+              } else {
+                print(data.content);
+              }
+            } catch (e) {
+              print('Error al leer archivo', 'error');
+            }
+          }
+          break;
+        case 'mkdir':
+          if (args.length === 0) {
+            print('Uso: mkdir <directorio>', 'error');
+          } else {
+            try {
+              const response = await fetch('api/mkdir.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({dir: args[0]})
+              });
+              const data = await response.json();
+              if (data.error) {
+                print(data.error, 'error');
+              } else {
+                print('Directorio creado', 'success');
+              }
+            } catch (e) {
+              print('Error al crear directorio', 'error');
+            }
+          }
+          break;
+        case 'touch':
+          if (args.length === 0) {
+            print('Uso: touch <archivo>', 'error');
+          } else {
+            try {
+              const response = await fetch('api/touch.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({file: args[0]})
+              });
+              const data = await response.json();
+              if (data.error) {
+                print(data.error, 'error');
+              } else {
+                print('Archivo creado', 'success');
+              }
+            } catch (e) {
+              print('Error al crear archivo', 'error');
+            }
+          }
+          break;
+        case 'rm':
+          if (args.length === 0) {
+            print('Uso: rm <archivo>', 'error');
+          } else {
+            try {
+              const response = await fetch('api/rm.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({target: args[0]})
+              });
+              const data = await response.json();
+              if (data.error) {
+                print(data.error, 'error');
+              } else {
+                print('Eliminado', 'success');
+              }
+            } catch (e) {
+              print('Error al eliminar', 'error');
+            }
+          }
+          break;
+        case 'history':
+          commandHistory.forEach((c, i) => {
+            print(`  ${i + 1}  ${c}`);
+          });
+          break;
+        case 'calc':
+          if (args.length === 0) {
+            print('Uso: calc <expresión> (ej: calc 2+2)');
+          } else {
+            try {
+              const result = eval(args.join(''));
+              print(result.toString());
+            } catch (e) {
+              print('Expresión inválida', 'error');
+            }
+          }
+          break;
+        case 'neofetch':
+          printHTML(`
+<span style="color:#79c0ff">       _____        </span>     user    <span style="color:#7ee787">user</span>
+<span style="color:#79c0ff">      /  __ \\       </span>     --------  
+<span style="color:#79c0ff">     |  /  \\ |      </span>     OS      <span style="color:#7ee787">LocalOS</span>
+<span style="color:#79c0ff">     |  |  | |      </span>     Kernel  <span style="color:#7ee787">WebOS 1.0</span>
+<span style="color:#79c0ff">      \\__/ |_|      </span>     Shell   <span style="color:#7ee787">LocalOS Terminal</span>
+<span style="color:#79c0ff">     ____   _       </span>     Theme   <span style="color:#7ee787">Dark</span>
+<span style="color:#79c0ff">    |  _ \\ | |      </span>     --------  
+<span style="color:#79c0ff">    | | | || |      </span>     
+<span style="color:#79c0ff">    | |_| || |___   </span>     
+<span style="color:#79c0ff">    |____/ |_____|  </span>     
+          `);
+          break;
+        case 'env':
+          print('Variables de entorno:');
+          print('  USER=user');
+          print('  HOME=/home/user');
+          print('  SHELL=localos-term');
+          print('  OS=LocalOS');
+          break;
+        default:
+          print(`Comando no encontrado: ${command}. Escribe 'help' para ver disponibles.`, 'error');
+      }
+    }
+
+    function updatePrompt() {
+      const pathEl = document.querySelector('.prompt .path');
+      pathEl.textContent = currentPath;
+    }
+
+    input.addEventListener('keydown', async (e) => {
+      if (e.key === 'Enter') {
+        const cmd = input.value;
+        input.value = '';
+        await executeCommand(cmd);
+      } else if (e.key === 'ArrowUp') {
+        if (historyIndex > 0) {
+          historyIndex--;
+          input.value = commandHistory[historyIndex];
+        }
+        e.preventDefault();
+      } else if (e.key === 'ArrowDown') {
+        if (historyIndex < commandHistory.length - 1) {
+          historyIndex++;
+          input.value = commandHistory[historyIndex];
+        } else {
+          historyIndex = commandHistory.length;
+          input.value = '';
+        }
+        e.preventDefault();
+      } else if (e.key === 'Tab') {
+        e.preventDefault();
+        // Auto-completar simple
+        const partial = input.value.split(/\s+/).pop();
+        const matches = Object.keys(commands).filter(c => c.startsWith(partial));
+        if (matches.length === 1) {
+          const parts = input.value.split(/\s+/);
+          parts[parts.length - 1] = matches[0];
+          input.value = parts.join(' ');
+        }
+      }
+    });
+
+    showWelcome();
+    input.focus();
+  </script>
+</body>
+</html>

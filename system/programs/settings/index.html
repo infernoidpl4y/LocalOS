@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings - LocalOS</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      background: #1a1a2e;
+      color: #eee;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      height: 100vh;
+      display: flex;
+    }
+    .sidebar {
+      width: 220px;
+      background: #16213e;
+      border-right: 1px solid #0f3460;
+      padding: 20px 0;
+    }
+    .sidebar-item {
+      padding: 12px 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #8b949e;
+    }
+    .sidebar-item:hover { background: #0f3460; }
+    .sidebar-item.active {
+      background: #e94560;
+      color: white;
+    }
+    .sidebar-item span:first-child { font-size: 18px; }
+    .content {
+      flex: 1;
+      padding: 30px;
+      overflow-y: auto;
+    }
+    .section-title {
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+    .setting-group {
+      background: #16213e;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .setting-group h3 {
+      margin: 0 0 15px 0;
+      font-size: 16px;
+      color: #8b949e;
+    }
+    .setting-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #0f3460;
+    }
+    .setting-item:last-child { border-bottom: none; }
+    .setting-label { font-size: 14px; }
+    .setting-desc {
+      font-size: 12px;
+      color: #8b949e;
+      margin-top: 3px;
+    }
+    .toggle {
+      width: 50px;
+      height: 26px;
+      background: #0f3460;
+      border-radius: 13px;
+      cursor: pointer;
+      position: relative;
+      transition: background 0.2s;
+    }
+    .toggle.on { background: #3fb950; }
+    .toggle::after {
+      content: '';
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      background: white;
+      border-radius: 50%;
+      top: 2px;
+      left: 2px;
+      transition: left 0.2s;
+    }
+    .toggle.on::after { left: 26px; }
+    .color-picker {
+      display: flex;
+      gap: 10px;
+    }
+    .color-option {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+    }
+    .color-option.selected { border-color: white; }
+    .input-range {
+      width: 150px;
+      -webkit-appearance: none;
+      height: 6px;
+      background: #0f3460;
+      border-radius: 3px;
+    }
+    .input-range::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      background: #e94560;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    .dotfile-editor {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 15px;
+      font-family: monospace;
+      font-size: 13px;
+      color: #c9d1d9;
+      width: 100%;
+      min-height: 200px;
+      resize: vertical;
+    }
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .btn-primary {
+      background: #e94560;
+      color: white;
+    }
+    .btn-primary:hover { background: #ff6b6b; }
+    .btn-secondary {
+      background: #0f3460;
+      color: #eee;
+    }
+    .wallpaper-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+    }
+    .wallpaper-option {
+      aspect-ratio: 16/9;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 3px solid transparent;
+      overflow: hidden;
+    }
+    .wallpaper-option.selected { border-color: #e94560; }
+    .wallpaper-option img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="sidebar-item active" onclick="showSection('appearance')">
+      <span>🎨</span> Appearance
+    </div>
+    <div class="sidebar-item" onclick="showSection('desktop')">
+      <span>🖥️</span> Desktop
+    </div>
+    <div class="sidebar-item" onclick="showSection('dotfiles')">
+      <span>📄</span> DOTFILES
+    </div>
+    <div class="sidebar-item" onclick="showSection('about')">
+      <span>ℹ️</span> About
+    </div>
+  </div>
+  
+  <div class="content" id="content">
+    <!-- Appearance Section -->
+    <div id="appearance-section">
+      <h2 class="section-title">Appearance</h2>
+      
+      <div class="setting-group">
+        <h3>Theme</h3>
+        <div class="setting-item">
+          <div>
+            <div class="setting-label">Dark Mode</div>
+            <div class="setting-desc">Use dark theme</div>
+          </div>
+          <div class="toggle on" id="darkMode" onclick="toggleSetting(this)"></div>
+        </div>
+        <div class="setting-item">
+          <div>
+            <div class="setting-label">Accent Color</div>
+            <div class="setting-desc">Choose accent color</div>
+          </div>
+          <div class="color-picker">
+            <div class="color-option selected" style="background:#e94560" onclick="setAccent('#e94560')"></div>
+            <div class="color-option" style="background:#3fb950" onclick="setAccent('#3fb950')"></div>
+            <div class="color-option" style="background:#58a6ff" onclick="setAccent('#58a6ff')"></div>
+            <div class="color-option" style="background:#f0883e" onclick="setAccent('#f0883e')"></div>
+            <div class="color-option" style="background:#a371f7" onclick="setAccent('#a371f7')"></div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="setting-group">
+        <h3>Wallpaper</h3>
+        <div class="wallpaper-grid">
+          <div class="wallpaper-option selected" onclick="setWallpaper('default')">
+            <img src="../../imgs/wallpaper.jpg" alt="Default">
+          </div>
+          <div class="wallpaper-option" onclick="setWallpaper('space')">
+            <img src="../../imgs/uwp4960630.jpeg" alt="Space">
+          </div>
+          <div class="wallpaper-option" onclick="setWallpaper('gradient')">
+            <div style="width:100%;height:100%;background:linear-gradient(135deg,#667eea,#764ba2)"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Desktop Section -->
+    <div id="desktop-section" style="display:none;">
+      <h2 class="section-title">Desktop Settings</h2>
+      
+      <div class="setting-group">
+        <h3>Taskbar</h3>
+        <div class="setting-item">
+          <div>
+            <div class="setting-label">Auto-hide Taskbar</div>
+            <div class="setting-desc">Hide taskbar when fullscreen</div>
+          </div>
+          <div class="toggle" id="taskbarHide" onclick="toggleSetting(this)"></div>
+        </div>
+        <div class="setting-item">
+          <div>
+            <div class="setting-label">Icon Size</div>
+            <div class="setting-desc">Size of desktop icons</div>
+          </div>
+          <input type="range" class="input-range" min="32" max="64" value="48" id="iconSize" onchange="setIconSize(this.value)">
+        </div>
+      </div>
+      
+      <div class="setting-group">
+        <h3>Start Menu</h3>
+        <div class="setting-item">
+          <div>
+            <div class="setting-label">Show User Name</div>
+            <div class="setting-desc">Display username in start menu</div>
+          </div>
+          <div class="toggle on" id="showUser" onclick="toggleSetting(this)"></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- DOTFILES Section -->
+    <div id="dotfiles-section" style="display:none;">
+      <h2 class="section-title">DOTFILES Configuration</h2>
+      
+      <div class="setting-group">
+        <h3>Personal Configuration</h3>
+        <p style="color:#8b949e;margin-bottom:15px;font-size:13px;">
+          Customize your LocalOS experience with DOTFILES. These configuration files are stored in your home directory.
+        </p>
+        
+        <div class="setting-item" style="display:block;">
+          <div class="setting-label">.bashrc</div>
+          <div class="setting-desc" style="margin-bottom:10px;">Shell aliases and settings</div>
+          <textarea class="dotfile-editor" id="bashrc" placeholder="# Aliases
+alias ll='ls -la'
+alias gs='git status'
+
+# Prompt
+PS1='\u@\h:\w\$ '
+"></textarea>
+        </div>
+      </div>
+      
+      <div class="setting-group">
+        <div class="setting-label">.vimrc</div>
+        <div class="setting-desc" style="margin-bottom:10px;">Vim/editor settings</div>
+        <textarea class="dotfile-editor" id="vimrc" placeholder="syntax on
+set number
+set tabstop=2
+set expandtab
+colorscheme default
+"></textarea>
+      </div>
+      
+      <div class="setting-group">
+        <div class="setting-label">.gitconfig</div>
+        <div class="setting-desc" style="margin-bottom:10px;">Git configuration</div>
+        <textarea class="dotfile-editor" id="gitconfig" placeholder="[user]
+name = Your Name
+email = you@example.com
+
+[core]
+editor = vim
+"></textarea>
+      </div>
+      
+      <button class="btn btn-primary" onclick="saveDotfiles()">Save DOTFILES</button>
+    </div>
+    
+    <!-- About Section -->
+    <div id="about-section" style="display:none;">
+      <h2 class="section-title">About LocalOS</h2>
+      
+      <div class="setting-group">
+        <div style="text-align:center;padding:20px;">
+          <div style="font-size:64px;margin-bottom:20px;">🖥️</div>
+          <h2 style="margin:0 0 10px 0;">LocalOS</h2>
+          <p style="color:#8b949e;margin:0;">Version 1.0.0</p>
+          <p style="color:#8b949e;margin-top:20px;">
+            A web-based operating system built with PHP, HTML, CSS, and JavaScript.
+          </p>
+          <p style="color:#8b949e;margin-top:10px;">
+            © 2026 LocalOS Project
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function showSection(section) {
+      document.querySelectorAll('.sidebar-item').forEach(item => item.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      document.getElementById('appearance-section').style.display = section === 'appearance' ? 'block' : 'none';
+      document.getElementById('desktop-section').style.display = section === 'desktop' ? 'block' : 'none';
+      document.getElementById('dotfiles-section').style.display = section === 'dotfiles' ? 'block' : 'none';
+      document.getElementById('about-section').style.display = section === 'about' ? 'block' : 'none';
+    }
+
+    function toggleSetting(el) {
+      el.classList.toggle('on');
+      saveSettings();
+    }
+
+    function setAccent(color) {
+      document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+      event.target.classList.add('selected');
+      document.documentElement.style.setProperty('--accent', color);
+      saveSettings();
+    }
+
+    function setWallpaper(wallpaper) {
+      document.querySelectorAll('.wallpaper-option').forEach(opt => opt.classList.remove('selected'));
+      event.target.closest('.wallpaper-option').classList.add('selected');
+      localStorage.setItem('wallpaper', wallpaper);
+    }
+
+    function setIconSize(size) {
+      localStorage.setItem('iconSize', size);
+    }
+
+    function saveSettings() {
+      const settings = {
+        darkMode: document.getElementById('darkMode').classList.contains('on'),
+        accent: getComputedStyle(document.documentElement).getPropertyValue('--accent'),
+        taskbarHide: document.getElementById('taskbarHide').classList.contains('on'),
+        iconSize: document.getElementById('iconSize').value,
+        showUser: document.getElementById('showUser').classList.contains('on')
+      };
+      localStorage.setItem('localosSettings', JSON.stringify(settings));
+    }
+
+    function saveDotfiles() {
+      const dotfiles = {
+        bashrc: document.getElementById('bashrc').value,
+        vimrc: document.getElementById('vimrc').value,
+        gitconfig: document.getElementById('gitconfig').value
+      };
+      localStorage.setItem('dotfiles', JSON.stringify(dotfiles));
+      
+      fetch('api/save_dotfiles.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dotfiles)
+      }).then(() => {
+        alert('DOTFILES saved!');
+      }).catch(() => {
+        alert('Saved locally (session only)');
+      });
+    }
+
+    function loadSettings() {
+      const saved = localStorage.getItem('localosSettings');
+      if (saved) {
+        const settings = JSON.parse(saved);
+        if (!settings.darkMode) {
+          document.getElementById('darkMode').classList.remove('on');
+        }
+        if (settings.taskbarHide) {
+          document.getElementById('taskbarHide').classList.add('on');
+        }
+        if (settings.iconSize) {
+          document.getElementById('iconSize').value = settings.iconSize;
+        }
+        if (!settings.showUser) {
+          document.getElementById('showUser').classList.remove('on');
+        }
+      }
+      
+      const dotfiles = localStorage.getItem('dotfiles');
+      if (dotfiles) {
+        const files = JSON.parse(dotfiles);
+        if (files.bashrc) document.getElementById('bashrc').value = files.bashrc;
+        if (files.vimrc) document.getElementById('vimrc').value = files.vimrc;
+        if (files.gitconfig) document.getElementById('gitconfig').value = files.gitconfig;
+      }
+    }
+
+    loadSettings();
+  </script>
+</body>
+</html>

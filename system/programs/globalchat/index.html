@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Global Chat - LocalOS</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+      color: #eee;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .header {
+      padding: 20px;
+      background: rgba(0,0,0,0.4);
+      border-bottom: 1px solid #30363d;
+    }
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 22px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .header-globe {
+      font-size: 26px;
+      animation: spin 20s linear infinite;
+    }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .user-info input {
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #eee;
+      font-size: 14px;
+      width: 150px;
+    }
+    .stats {
+      display: flex;
+      gap: 25px;
+      font-size: 13px;
+      color: #8b949e;
+      margin-top: 8px;
+    }
+    .stats span { color: #3fb950; }
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      max-width: 1000px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 15px;
+    }
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .message {
+      background: rgba(255,255,255,0.03);
+      padding: 12px 16px;
+      border-radius: 12px;
+      max-width: 75%;
+      animation: slideIn 0.2s ease;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .message.my-message {
+      background: rgba(233, 69, 96, 0.15);
+      align-self: flex-end;
+    }
+    .message-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .message-avatar {
+      width: 24px;
+      height: 24px;
+      background: linear-gradient(135deg, #58a6ff, #1f6feb);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: bold;
+    }
+    .message-username {
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .message-flag {
+      font-size: 14px;
+    }
+    .message-time {
+      font-size: 10px;
+      color: #8b949e;
+      margin-left: auto;
+    }
+    .message-text {
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .channel-tabs {
+      display: flex;
+      gap: 8px;
+      padding: 10px 20px;
+      background: rgba(0,0,0,0.2);
+      flex-wrap: wrap;
+    }
+    .channel-tab {
+      padding: 8px 16px;
+      background: rgba(255,255,255,0.05);
+      border: none;
+      border-radius: 20px;
+      color: #8b949e;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    .channel-tab:hover { background: rgba(255,255,255,0.1); }
+    .channel-tab.active {
+      background: #e94560;
+      color: white;
+    }
+    .online-users {
+      padding: 8px 20px;
+      font-size: 12px;
+      color: #8b949e;
+      background: rgba(0,0,0,0.2);
+    }
+    .input-area {
+      padding: 15px 20px;
+      background: rgba(0,0,0,0.4);
+      border-top: 1px solid #30363d;
+    }
+    .input-container {
+      max-width: 960px;
+      margin: 0 auto;
+      display: flex;
+      gap: 12px;
+    }
+    .message-input {
+      flex: 1;
+      padding: 12px 16px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      color: #eee;
+      font-size: 14px;
+    }
+    .message-input:focus {
+      outline: none;
+      border-color: #e94560;
+    }
+    .send-btn {
+      padding: 12px 24px;
+      background: #e94560;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .send-btn:hover { background: #ff6b6b; }
+    .connection-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #3fb950;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: #3fb950;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-content">
+      <div>
+        <h1><span class="header-globe">🌐</span> Global Chat</h1>
+        <div class="connection-status">
+          <div class="status-dot"></div>
+          Connected to LocalOS Network
+        </div>
+      </div>
+      <div class="user-info">
+        <input type="text" id="username" placeholder="Your username" value="InfernoidPl4y" onchange="saveUsername()">
+      </div>
+    </div>
+    <div class="stats">
+      <div>🌍 Users online: <span id="onlineCount">Loading...</span></div>
+      <div>📊 Messages: <span id="msgCount">0</span></div>
+      <div>⏱️ Uptime: <span id="uptime">00:00:00</span></div>
+    </div>
+  </div>
+  
+  <div class="channel-tabs">
+    <button class="channel-tab active" onclick="switchChannel('general')">#general</button>
+    <button class="channel-tab" onclick="switchChannel('programming')">#programming</button>
+    <button class="channel-tab" onclick="switchChannel('help')">#help</button>
+    <button class="channel-tab" onclick="switchChannel('random')">#random</button>
+    <button class="channel-tab" onclick="switchChannel('showcase')">#showcase</button>
+  </div>
+  
+  <div class="online-users" id="onlineUsers">Connecting to global network...</div>
+  
+  <div class="chat-container">
+    <div class="messages" id="messages"></div>
+  </div>
+  
+  <div class="input-area">
+    <div class="input-container">
+      <input type="text" class="message-input" id="messageInput" placeholder="Type your message..." onkeypress="handleKeyPress(event)">
+      <button class="send-btn" onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <script>
+    let currentChannel = 'general';
+    let messages = [];
+    let startTime = Date.now();
+    let username = localStorage.getItem('globalchat_username') || 'InfernoidPl4y';
+
+    const channels = {
+      general: { name: 'General', desc: 'General discussion', users: 0 },
+      programming: { name: 'Programming', desc: 'Code & dev talk', users: 0 },
+      help: { name: 'Help', desc: 'Get help from community', users: 0 },
+      random: { name: 'Random', desc: 'Anything goes', users: 0 },
+      showcase: { name: 'Showcase', desc: 'Show your projects', users: 0 }
+    };
+
+    const countries = [
+      { code: '🇺🇸', name: 'USA' },
+      { code: '🇪🇸', name: 'Spain' },
+      { code: '🇩🇪', name: 'Germany' },
+      { code: '🇫🇷', name: 'France' },
+      { code: '🇮🇹', name: 'Italy' },
+      { code: '🇵🇹', name: 'Portugal' },
+      { code: '🇧🇷', name: 'Brazil' },
+      { code: '🇲🇽', name: 'Mexico' },
+      { code: '🇯🇵', name: 'Japan' },
+      { code: '🇰🇷', name: 'Korea' },
+      { code: '🇨🇦', name: 'Canada' },
+      { code: '🇦🇺', name: 'Australia' },
+      { code: '🇬🇧', name: 'UK' },
+      { code: '🇮🇳', name: 'India' },
+      { code: '🇦🇷', name: 'Argentina' }
+    ];
+
+    const botNames = [
+      'DevMaster42', 'CodeNinja', 'LinuxLover', 'WebWizard', 'DataDragon',
+      'CyberPunk', 'TechGuru', 'PixelArtist', 'StackOverflow', 'GitMaster',
+      'NodeNinja', 'PythonPro', 'RustEvangelist', 'GoGuru', 'JSGenius',
+      'CloudSurfer', 'AIExplorer', 'OpenSourceFan', 'SystemHacker', 'NetRunner'
+    ];
+
+    const botResponses = [
+      "That's awesome! 🎉",
+      "Interesting point!",
+      "I agree with you there.",
+      "Have you tried LocalOS yet? It's amazing!",
+      "Great minds think alike 👀",
+      "Could you explain more?",
+      "That's a great idea!",
+      "I'm learning so much from this chat!",
+      "LocalOS is the future!",
+      "Anyone tested the new features?",
+      "The terminal is so smooth 🔥",
+      "Love the dark theme!",
+      "Just discovered this, it's incredible!",
+      "Best web OS ever!",
+      "Working on a new project with LOS!"
+    ];
+
+    const topicResponses = {
+      programming: [
+        "What's your favorite language?",
+        "I love coding in Python!",
+        "Anyone using Rust here?",
+        "The new LOS language looks promising!",
+        "Debugging is my passion 😅"
+      ],
+      help: [
+        "Check the docs!",
+        "Have you tried restarting?",
+        "The community is very helpful here",
+        "Search before asking 🙏",
+        "What error are you getting?"
+      ],
+      random: [
+        "Random thought: toast is just fancy bread",
+        "Anyone watching anything good?",
+        "Coffee or tea? ☕",
+        "Weekend plans?",
+        "The weather is crazy today!"
+      ],
+      showcase: [
+        "Looking good! 🔥",
+        "Great work!",
+        "Can you share the link?",
+        "That's impressive!",
+        "I need to try that!"
+      ]
+    };
+
+    const welcomeMessages = [
+      { user: 'System', flag: '🤖', text: 'Welcome to Global Chat! Connect with LocalOS users worldwide 🌍' },
+      { user: 'DevMaster42', flag: '🇺🇸', text: 'Hey everyone! Long time no see 👋' },
+      { user: 'CodeNinja', flag: '🇯🇵', text: 'Hello from Japan! Just discovered LocalOS 🎉' },
+      { user: 'LinuxLover', flag: '🇩🇪', text: 'The new terminal update is amazing!' },
+      { user: 'WebWizard', flag: '🇧🇷', text: 'Eai galera! Brazilian developer here 🇧🇷' },
+      { user: 'TechGuru', flag: '🇮🇳', text: 'LocalOS keeps getting better each day!' }
+    ];
+
+    document.getElementById('username').value = username;
+
+    function getRandomCountry() {
+      return countries[Math.floor(Math.random() * countries.length)];
+    }
+
+    function getRandomBot() {
+      const name = botNames[Math.floor(Math.random() * botNames.length)];
+      const country = getRandomCountry();
+      return { user: name, flag: country.code };
+    }
+
+    function loadMessages() {
+      const saved = localStorage.getItem('globalchat_' + currentChannel);
+      if (saved) {
+        messages = JSON.parse(saved);
+      } else {
+        messages = [...welcomeMessages];
+      }
+      renderMessages();
+      updateStats();
+    }
+
+    function saveMessages() {
+      localStorage.setItem('globalchat_' + currentChannel, JSON.stringify(messages));
+    }
+
+    function renderMessages() {
+      const container = document.getElementById('messages');
+      
+      container.innerHTML = messages.map(msg => {
+        const isMy = msg.user === username;
+        const time = new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        return `
+          <div class="message ${isMy ? 'my-message' : ''}">
+            <div class="message-header">
+              <div class="message-avatar" style="background: linear-gradient(135deg, ${getAvatarColor(msg.user)}, ${getAvatarColor(msg.user + '2')})">${msg.user.charAt(0).toUpperCase()}</div>
+              <div class="message-username">${escapeHtml(msg.user)}</div>
+              <div class="message-flag">${msg.flag}</div>
+              <div class="message-time">${time}</div>
+            </div>
+            <div class="message-text">${escapeHtml(msg.text)}</div>
+          </div>
+        `;
+      }).join('');
+      
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function getAvatarColor(str) {
+      const colors = ['#e94560', '#58a6ff', '#3fb950', '#f0883e', '#a371f7', '#f778ba', '#79c0ff', '#d29922'];
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+      return colors[Math.abs(hash) % colors.length];
+    }
+
+    function sendMessage() {
+      const input = document.getElementById('messageInput');
+      const text = input.value.trim();
+      
+      if (!text || !username) {
+        if (!username) {
+          alert('Please enter a username first!');
+          document.getElementById('username').focus();
+        }
+        return;
+      }
+      
+      const myCountry = countries.find(c => c.code === '🇪🇸') || getRandomCountry();
+      
+      messages.push({
+        user: username,
+        flag: myCountry.code,
+        text: text,
+        time: Date.now(),
+        isMe: true
+      });
+      
+      input.value = '';
+      saveMessages();
+      renderMessages();
+      updateStats();
+      
+      if (Math.random() > 0.5) {
+        setTimeout(() => simulateResponse(), 1000 + Math.random() * 3000);
+      }
+    }
+
+    function simulateResponse() {
+      const bot = getRandomBot();
+      let text;
+      
+      if (topicResponses[currentChannel]) {
+        text = topicResponses[currentChannel][Math.floor(Math.random() * topicResponses[currentChannel].length)];
+      } else {
+        text = botResponses[Math.floor(Math.random() * botResponses.length)];
+      }
+      
+      messages.push({
+        user: bot.user,
+        flag: bot.flag,
+        text: text,
+        time: Date.now()
+      });
+      
+      saveMessages();
+      renderMessages();
+      updateStats();
+    }
+
+    function handleKeyPress(e) {
+      if (e.key === 'Enter') {
+        sendMessage();
+      }
+    }
+
+    function switchChannel(channel) {
+      currentChannel = channel;
+      document.querySelectorAll('.channel-tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      loadMessages();
+    }
+
+    function saveUsername() {
+      username = document.getElementById('username').value.trim() || 'Guest';
+      localStorage.setItem('globalchat_username', username);
+    }
+
+    function updateStats() {
+      const onlineCount = Math.floor(Math.random() * 50) + 80 + messages.length;
+      document.getElementById('onlineCount').textContent = onlineCount;
+      document.getElementById('msgCount').textContent = messages.length;
+      
+      const channel = channels[currentChannel];
+      channel.users = Math.floor(Math.random() * 20) + 5;
+      
+      document.getElementById('onlineUsers').textContent = 
+        `#${channel.name} • ${channel.desc} • ${channel.users} users here`;
+      
+      const uptime = Math.floor((Date.now() - startTime) / 1000);
+      const hours = Math.floor(uptime / 3600).toString().padStart(2, '0');
+      const mins = Math.floor((uptime % 3600) / 60).toString().padStart(2, '0');
+      const secs = (uptime % 60).toString().padStart(2, '0');
+      document.getElementById('uptime').textContent = `${hours}:${mins}:${secs}`;
+    }
+
+    setInterval(() => {
+      if (Math.random() > 0.7) {
+        simulateResponse();
+      }
+      updateStats();
+    }, 8000);
+
+    loadMessages();
+    setInterval(updateStats, 1000);
+  </script>
+</body>
+</html>

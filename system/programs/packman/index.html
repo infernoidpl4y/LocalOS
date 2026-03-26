@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Package Manager - LocalOS</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      background: #0d1117;
+      color: #c9d1d9;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .header {
+      padding: 20px;
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .header-logo {
+      font-size: 28px;
+    }
+    .search-bar {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    .search-bar input {
+      flex: 1;
+      padding: 10px 15px;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #c9d1d9;
+      font-size: 14px;
+    }
+    .terminal-output {
+      flex: 1;
+      padding: 20px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 14px;
+      overflow-y: auto;
+      background: #0d1117;
+    }
+    .terminal-line {
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+    .terminal-line.cmd { color: #7ee787; }
+    .terminal-line.success { color: #3fb950; }
+    .terminal-line.error { color: #f85149; }
+    .terminal-line.info { color: #58a6ff; }
+    .terminal-line.warning { color: #d29922; }
+    .terminal-line.dim { color: #8b949e; }
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      padding: 15px 20px;
+      background: #161b22;
+      border-top: 1px solid #30363d;
+    }
+    .toolbar button {
+      padding: 10px 20px;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #c9d1d9;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .toolbar button:hover { background: #30363d; }
+    .toolbar button.primary {
+      background: #238636;
+      border-color: #238636;
+    }
+    .toolbar button.primary:hover { background: #2ea043; }
+    .input-line {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 15px 20px;
+      background: #161b22;
+      border-top: 1px solid #30363d;
+    }
+    .input-line span {
+      color: #7ee787;
+      font-family: monospace;
+    }
+    .input-line input {
+      flex: 1;
+      padding: 10px;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 4px;
+      color: #c9d1d9;
+      font-family: monospace;
+    }
+    .packages-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 15px;
+    }
+    .package-card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 15px;
+    }
+    .package-name {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+    .package-version {
+      font-size: 12px;
+      color: #8b949e;
+      margin-bottom: 10px;
+    }
+    .package-desc {
+      font-size: 13px;
+      color: #8b949e;
+      margin-bottom: 10px;
+    }
+    .package-status {
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+    .package-status.installed {
+      background: rgba(63, 185, 80, 0.2);
+      color: #3fb950;
+    }
+    .package-status.available {
+      background: rgba(88, 166, 255, 0.2);
+      color: #58a6ff;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1><span class="header-logo">📦</span> LocalOS Package Manager</h1>
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Search packages..." oninput="searchPackages()">
+    </div>
+  </div>
+  
+  <div class="terminal-output" id="output">
+    <div class="terminal-line cmd">$ los-pkg update</div>
+    <div class="terminal-line info">Reading package lists... Done</div>
+    <div class="terminal-line success">Building dependency tree... Done</div>
+    <div class="terminal-line dim">All packages up to date.</div>
+    <div class="terminal-line dim"></div>
+    <div class="terminal-line cmd">$ los-pkg list --installed</div>
+    <div class="terminal-line info">Installed packages:</div>
+    <div class="terminal-line">  terminal      1.0.0    [1] installed</div>
+    <div class="terminal-line">  filemanager  1.0.0    [1] installed</div>
+    <div class="terminal-line">  breakcode    1.0.0    [1] installed</div>
+    <div class="terminal-line">  calculator   1.0.0    [1] installed</div>
+    <div class="terminal-line">  notepad      1.0.0    [1] installed</div>
+  </div>
+  
+  <div class="toolbar">
+    <button onclick="runCommand('update')">Update</button>
+    <button onclick="runCommand('upgrade')">Upgrade All</button>
+    <button onclick="showInstalled()">Installed</button>
+    <button onclick="showAvailable()">Available</button>
+    <button onclick="clearOutput()">Clear</button>
+  </div>
+  
+  <div class="input-line">
+    <span>$ los-pkg</span>
+    <input type="text" id="commandInput" placeholder="install <package> | remove <package> | search <query>" onkeypress="handleCommand(event)">
+  </div>
+
+  <script>
+    const packages = [
+      { name: 'terminal', version: '1.0.0', desc: 'Terminal emulator', installed: true, repo: 'core' },
+      { name: 'filemanager', version: '1.0.0', desc: 'File manager with FTP', installed: true, repo: 'core' },
+      { name: 'breakcode', version: '1.0.0', desc: 'Code editor', installed: true, repo: 'core' },
+      { name: 'calculator', version: '1.0.0', desc: 'Calculator', installed: true, repo: 'core' },
+      { name: 'notepad', version: '1.0.0', desc: 'Text editor', installed: true, repo: 'core' },
+      { name: 'media', version: '1.0.0', desc: 'Media player', installed: false, repo: 'core' },
+      { name: 'chat', version: '1.0.0', desc: 'Internal chat', installed: false, repo: 'core' },
+      { name: 'globalchat', version: '1.0.0', desc: 'Global chat', installed: false, repo: 'core' },
+      { name: 'settings', version: '1.0.0', desc: 'System settings', installed: false, repo: 'core' },
+      { name: 'appstore', version: '1.0.0', desc: 'App store', installed: false, repo: 'core' },
+      { name: 'neofetch', version: '1.0.0', desc: 'System info tool', installed: false, repo: 'community' },
+      { name: 'htop', version: '1.0.0', desc: 'Process manager', installed: false, repo: 'community' },
+      { name: 'vim', version: '1.0.0', desc: 'Text editor enhanced', installed: false, repo: 'community' },
+      { name: 'git-ui', version: '1.0.0', desc: 'Git GUI', installed: false, repo: 'community' },
+      { name: 'python3', version: '3.11.0', desc: 'Python runtime', installed: false, repo: 'community' },
+      { name: 'nodejs', version: '20.0.0', desc: 'Node.js runtime', installed: false, repo: 'community' }
+    ];
+
+    let installedPackages = packages.filter(p => p.installed).map(p => p.name);
+
+    function print(text, type = '') {
+      const output = document.getElementById('output');
+      const line = document.createElement('div');
+      line.className = 'terminal-line ' + type;
+      line.textContent = text;
+      output.appendChild(line);
+      output.scrollTop = output.scrollHeight;
+    }
+
+    function handleCommand(e) {
+      if (e.key === 'Enter') {
+        const input = document.getElementById('commandInput');
+        const cmd = input.value.trim();
+        input.value = '';
+        
+        if (!cmd) return;
+        
+        print('$ los-pkg ' + cmd, 'cmd');
+        executeCommand(cmd);
+      }
+    }
+
+    function executeCommand(cmd) {
+      const parts = cmd.split(' ');
+      const action = parts[0];
+      const pkg = parts[1];
+
+      switch (action) {
+        case 'install':
+          if (!pkg) {
+            print('Usage: install <package>', 'error');
+            return;
+          }
+          installPackage(pkg);
+          break;
+        case 'remove':
+        case 'uninstall':
+          if (!pkg) {
+            print('Usage: remove <package>', 'error');
+            return;
+          }
+          removePackage(pkg);
+          break;
+        case 'search':
+          if (!pkg) {
+            print('Usage: search <query>', 'error');
+            return;
+          }
+          searchPackage(pkg);
+          break;
+        case 'list':
+          if (parts[1] === '--installed') {
+            listInstalled();
+          } else {
+            listAvailable();
+          }
+          break;
+        case 'show':
+          if (pkg) {
+            showPackage(pkg);
+          } else {
+            print('Usage: show <package>', 'error');
+          }
+          break;
+        default:
+          print(`Unknown command: ${action}`, 'error');
+          print('Available: install, remove, search, list, show, update, upgrade', 'dim');
+      }
+    }
+
+    function installPackage(name) {
+      const pkg = packages.find(p => p.name === name);
+      if (!pkg) {
+        print(`Package '${name}' not found`, 'error');
+        return;
+      }
+      if (pkg.installed) {
+        print(`${name} is already installed`, 'warning');
+        return;
+      }
+      
+      print(`Installing ${name} (${pkg.version})...`, 'info');
+      setTimeout(() => {
+        pkg.installed = true;
+        installedPackages.push(name);
+        print(`${name} installed successfully`, 'success');
+      }, 500);
+    }
+
+    function removePackage(name) {
+      const pkg = packages.find(p => p.name === name);
+      if (!pkg) {
+        print(`Package '${name}' not found`, 'error');
+        return;
+      }
+      if (!pkg.installed) {
+        print(`${name} is not installed`, 'warning');
+        return;
+      }
+      
+      print(`Removing ${name}...`, 'info');
+      setTimeout(() => {
+        pkg.installed = false;
+        installedPackages = installedPackages.filter(p => p !== name);
+        print(`${name} removed successfully`, 'success');
+      }, 500);
+    }
+
+    function searchPackage(query) {
+      const results = packages.filter(p => 
+        p.name.includes(query) || p.desc.toLowerCase().includes(query.toLowerCase())
+      );
+      
+      if (results.length === 0) {
+        print(`No packages found matching '${query}'`, 'warning');
+        return;
+      }
+      
+      print(`Found ${results.length} packages:`, 'info');
+      results.forEach(p => {
+        const status = p.installed ? '[installed]' : '[available]';
+        print(`  ${p.name}  ${p.version}  ${status}`, p.installed ? 'success' : 'info');
+        print(`    ${p.desc}`, 'dim');
+      });
+    }
+
+    function listInstalled() {
+      const installed = packages.filter(p => p.installed);
+      print(`Installed packages (${installed.length}):`, 'info');
+      installed.forEach(p => {
+        print(`  ${p.name}  ${p.version}  [1] installed`, 'success');
+      });
+    }
+
+    function listAvailable() {
+      const available = packages.filter(p => !p.installed);
+      print(`Available packages (${available.length}):`, 'info');
+      available.forEach(p => {
+        print(`  ${p.name}  ${p.version}  [${p.repo}]`, 'info');
+      });
+    }
+
+    function showPackage(name) {
+      const pkg = packages.find(p => p.name === name);
+      if (!pkg) {
+        print(`Package '${name}' not found`, 'error');
+        return;
+      }
+      
+      print(`Package: ${pkg.name}`, 'info');
+      print(`Version: ${pkg.version}`, 'info');
+      print(`Description: ${pkg.desc}`, 'info');
+      print(`Repository: ${pkg.repo}`, 'info');
+      print(`Status: ${pkg.installed ? 'installed' : 'available'}`, pkg.installed ? 'success' : 'info');
+    }
+
+    function runCommand(cmd) {
+      print('$ los-pkg ' + cmd, 'cmd');
+      
+      switch (cmd) {
+        case 'update':
+          print('Reading package lists... Done', 'info');
+          print('Building dependency tree... Done', 'success');
+          print('All packages up to date.', 'dim');
+          break;
+        case 'upgrade':
+          print('Upgrading packages...', 'info');
+          print('0 upgraded, 0 newly installed, 0 to remove.', 'success');
+          break;
+        case 'clear':
+          clearOutput();
+          break;
+      }
+    }
+
+    function showInstalled() {
+      print('$ los-pkg list --installed', 'cmd');
+      listInstalled();
+    }
+
+    function showAvailable() {
+      print('$ los-pkg list', 'cmd');
+      listAvailable();
+    }
+
+    function clearOutput() {
+      document.getElementById('output').innerHTML = '';
+    }
+
+    function searchPackages() {
+      const query = document.getElementById('searchInput').value;
+      print('$ los-pkg search ' + query, 'cmd');
+      
+      if (query) {
+        searchPackage(query);
+      } else {
+        listAvailable();
+      }
+    }
+  </script>
+</body>
+</html>

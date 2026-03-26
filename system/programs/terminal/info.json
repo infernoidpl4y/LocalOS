@@ -1,0 +1,9 @@
+{
+  "name": "Terminal",
+  "description": "Command line terminal emulator",
+  "icon": "terminal.png",
+  "type": "php",
+  "entry": "index.html",
+  "version": "2.0.0",
+  "author": "LocalOS"
+}

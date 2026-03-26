@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Internal Chat - LocalOS</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      background: #1a1a2e;
+      color: #eee;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      height: 100vh;
+      display: flex;
+    }
+    .sidebar {
+      width: 280px;
+      background: #16213e;
+      border-right: 1px solid #0f3460;
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar-header {
+      padding: 20px;
+      border-bottom: 1px solid #0f3460;
+    }
+    .sidebar-header h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+    .user-profile {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    .my-avatar {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #e94560, #0f3460);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+    .my-info {
+      flex: 1;
+    }
+    .my-name {
+      font-weight: 500;
+      font-size: 14px;
+    }
+    .my-status {
+      font-size: 12px;
+      color: #3fb950;
+    }
+    .search-box {
+      padding: 15px;
+    }
+    .search-box input {
+      width: 100%;
+      padding: 10px;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #eee;
+    }
+    .user-list {
+      flex: 1;
+      overflow-y: auto;
+    }
+    .user-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 20px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .user-item:hover { background: #0f3460; }
+    .user-item.active { background: #e94560; }
+    .user-avatar {
+      width: 44px;
+      height: 44px;
+      background: #0f3460;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    .user-info { flex: 1; overflow: hidden; }
+    .user-name { font-weight: 500; }
+    .user-last-msg {
+      font-size: 12px;
+      color: #8b949e;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .user-time {
+      font-size: 11px;
+      color: #8b949e;
+    }
+    .unread-badge {
+      background: #e94560;
+      color: white;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      min-width: 20px;
+      text-align: center;
+    }
+    .chat-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .chat-header {
+      padding: 15px 20px;
+      background: #16213e;
+      border-bottom: 1px solid #0f3460;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .chat-header-avatar {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #e94560, #0f3460);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+    .chat-header-info { flex: 1; }
+    .chat-header-name { font-weight: 600; font-size: 16px; }
+    .chat-header-status { font-size: 12px; color: #3fb950; }
+    .messages {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      background: #0d1117;
+    }
+    .message {
+      max-width: 70%;
+      padding: 12px 16px;
+      border-radius: 16px;
+      position: relative;
+    }
+    .message.sent {
+      background: #e94560;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+    .message.received {
+      background: #21262d;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+    }
+    .message-text { font-size: 14px; line-height: 1.5; }
+    .message-time {
+      font-size: 10px;
+      color: rgba(255,255,255,0.6);
+      margin-top: 6px;
+      text-align: right;
+    }
+    .input-area {
+      padding: 15px;
+      background: #16213e;
+      border-top: 1px solid #0f3460;
+      display: flex;
+      gap: 10px;
+    }
+    .input-area input {
+      flex: 1;
+      padding: 12px 16px;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 24px;
+      color: #eee;
+      font-size: 14px;
+    }
+    .input-area input:focus {
+      outline: none;
+      border-color: #e94560;
+    }
+    .input-area button {
+      width: 44px;
+      height: 44px;
+      background: #e94560;
+      border: none;
+      border-radius: 50%;
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+    }
+    .input-area button:hover { background: #ff6b6b; }
+    .empty-chat {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #8b949e;
+      background: #0d1117;
+    }
+    .typing-indicator {
+      padding: 10px 20px;
+      font-size: 12px;
+      color: #8b949e;
+      display: none;
+    }
+    .typing-indicator.active { display: block; }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h2>Messages</h2>
+      <div class="user-profile">
+        <div class="my-avatar" id="myAvatar">I</div>
+        <div class="my-info">
+          <div class="my-name" id="myName">InfernoidPl4y</div>
+          <div class="my-status">Online</div>
+        </div>
+      </div>
+    </div>
+    <div class="search-box">
+      <input type="text" placeholder="Search conversations..." oninput="searchUsers()">
+    </div>
+    <div class="user-list" id="userList"></div>
+  </div>
+  
+  <div class="chat-area" id="chatArea">
+    <div class="empty-chat">
+      <div style="text-align:center;">
+        <div style="font-size:64px;margin-bottom:20px;">💬</div>
+        <div style="font-size:18px;margin-bottom:10px;">Welcome to Internal Chat</div>
+        <div style="font-size:14px;color:#8b949e;">Select a user to start chatting</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentUser = 'InfernoidPl4y';
+    let currentChat = null;
+    let conversations = {};
+    let users = [];
+    let pollingInterval = null;
+
+    function getUsername() {
+      return localStorage.getItem('los_username') || 'InfernoidPl4y';
+    }
+
+    function init() {
+      currentUser = getUsername();
+      document.getElementById('myName').textContent = currentUser;
+      document.getElementById('myAvatar').textContent = currentUser.charAt(0).toUpperCase();
+      loadUsers();
+      
+      setInterval(pollForMessages, 2000);
+    }
+
+    async function loadUsers() {
+      try {
+        const response = await fetch('api/users.php');
+        const data = await response.json();
+        users = (data.users || []).filter(u => u.id !== currentUser);
+        loadConversations();
+        renderUserList();
+      } catch (e) {
+        console.error('Error loading users:', e);
+        users = [];
+        renderUserList();
+      }
+    }
+
+    function loadConversations() {
+      const stored = localStorage.getItem('los_conversations');
+      if (stored) {
+        conversations = JSON.parse(stored);
+      } else {
+        conversations = {};
+      }
+    }
+
+    function saveConversations() {
+      localStorage.setItem('los_conversations', JSON.stringify(conversations));
+    }
+
+    function renderUserList(filter = '') {
+      const container = document.getElementById('userList');
+      const filtered = users.filter(u => u.name.toLowerCase().includes(filter.toLowerCase()));
+      
+      container.innerHTML = filtered.map(u => {
+        const conv = conversations[u.id] || { messages: [], unread: 0 };
+        const lastMsg = conv.messages[conv.messages.length - 1];
+        const lastMsgText = lastMsg ? (lastMsg.text.substring(0, 30) + (lastMsg.text.length > 30 ? '...' : '')) : 'No messages yet';
+        const time = lastMsg ? formatTime(lastMsg.timestamp) : '';
+        
+        return `
+          <div class="user-item ${currentChat === u.id ? 'active' : ''}" onclick="openChat('${u.id}')">
+            <div class="user-avatar">${u.name.charAt(0).toUpperCase()}</div>
+            <div class="user-info">
+              <div class="user-name">${u.name}</div>
+              <div class="user-last-msg">${lastMsgText}</div>
+            </div>
+            <div style="text-align:right;">
+              ${time ? `<div class="user-time">${time}</div>` : ''}
+              ${conv.unread > 0 ? `<div class="unread-badge">${conv.unread}</div>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function searchUsers() {
+      renderUserList(event.target.value);
+    }
+
+    function openChat(userId) {
+      currentChat = userId;
+      const user = users.find(u => u.id === userId);
+      
+      if (!conversations[userId]) {
+        conversations[userId] = { messages: [], unread: 0 };
+      }
+      conversations[userId].unread = 0;
+      saveConversations();
+      
+      renderUserList();
+      renderChat(user);
+    }
+
+    function renderChat(user) {
+      const container = document.getElementById('chatArea');
+      const conv = conversations[currentChat] || { messages: [] };
+      
+      container.innerHTML = `
+        <div class="chat-header">
+          <div class="chat-header-avatar">${user.name.charAt(0).toUpperCase()}</div>
+          <div class="chat-header-info">
+            <div class="chat-header-name">${user.name}</div>
+            <div class="chat-header-status">Online</div>
+          </div>
+        </div>
+        <div class="messages" id="messages">
+          ${conv.messages.length === 0 ? '<div style="text-align:center;color:#8b949e;padding:40px;">No messages yet. Say hello!</div>' : conv.messages.map(renderMessage).join('')}
+        </div>
+        <div class="typing-indicator" id="typingIndicator"></div>
+        <div class="input-area">
+          <input type="text" id="messageInput" placeholder="Type a message..." onkeypress="handleKeyPress(event)">
+          <button onclick="sendMessage()">➤</button>
+        </div>
+      `;
+      
+      scrollToBottom();
+    }
+
+    function renderMessage(msg) {
+      const time = formatTime(msg.timestamp);
+      return `
+        <div class="message ${msg.sender === currentUser ? 'sent' : 'received'}">
+          <div class="message-text">${escapeHtml(msg.text)}</div>
+          <div class="message-time">${time}</div>
+        </div>
+      `;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function formatTime(timestamp) {
+      const date = new Date(timestamp);
+      const now = new Date();
+      const diff = now - date;
+      
+      if (diff < 60000) return 'now';
+      if (diff < 3600000) return Math.floor(diff / 60000) + 'm';
+      if (diff < 86400000) return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    }
+
+    function handleKeyPress(e) {
+      if (e.key === 'Enter') {
+        sendMessage();
+      }
+    }
+
+    function sendMessage() {
+      const input = document.getElementById('messageInput');
+      const text = input.value.trim();
+      
+      if (!text || !currentChat) return;
+      
+      const message = {
+        sender: currentUser,
+        text: text,
+        timestamp: Date.now()
+      };
+      
+      if (!conversations[currentChat]) {
+        conversations[currentChat] = { messages: [], unread: 0 };
+      }
+      
+      conversations[currentChat].messages.push(message);
+      saveConversations();
+      
+      input.value = '';
+      renderChat(users.find(u => u.id === currentChat));
+      
+      fetch('api/send.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: currentChat,
+          from: currentUser,
+          text: text
+        })
+      }).catch(() => {});
+    }
+
+    async function pollForMessages() {
+      if (!currentChat) return;
+      
+      try {
+        const response = await fetch('api/messages.php?user=' + encodeURIComponent(currentChat));
+        const data = await response.json();
+        
+        if (data.messages && data.messages.length > 0) {
+          if (!conversations[currentChat]) {
+            conversations[currentChat] = { messages: [], unread: 0 };
+          }
+          
+          const existingIds = conversations[currentChat].messages.map(m => m.timestamp);
+          const newMessages = data.messages.filter(m => !existingIds.includes(m.timestamp));
+          
+          newMessages.forEach(m => {
+            conversations[currentChat].messages.push(m);
+          });
+          
+          if (newMessages.length > 0) {
+            saveConversations();
+            renderChat(users.find(u => u.id === currentChat));
+            renderUserList();
+          }
+        }
+      } catch (e) {}
+    }
+
+    function scrollToBottom() {
+      const container = document.getElementById('messages');
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

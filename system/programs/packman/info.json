@@ -1,0 +1,9 @@
+{
+  "name": "Package Manager",
+  "description": "LocalOS package manager and repository",
+  "icon": "package.png",
+  "type": "php",
+  "entry": "index.html",
+  "version": "2.0.0",
+  "author": "LocalOS"
+}

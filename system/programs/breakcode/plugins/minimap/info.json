@@ -1,0 +1,9 @@
+{
+  "name": "Minimap",
+  "description": "Code minimap for quick navigation",
+  "version": "1.0.0",
+  "author": "LocalOS",
+  "hooks": {
+    "onEditorInit": "initMinimap"
+  }
+}
